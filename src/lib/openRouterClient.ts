@@ -1,14 +1,4 @@
-export interface OpenRouterMessage {
-  role: 'user' | 'assistant' | 'system';
-  content: string;
-}
-
-export interface OpenRouterResponse {
-  choices: {
-    message: OpenRouterMessage;
-  }[];
-  model: string;
-}
+import type { OpenRouterMessage, OpenRouterResponse } from '../types';
 
 const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
 

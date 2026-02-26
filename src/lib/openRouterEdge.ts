@@ -1,7 +1,5 @@
-// src/lib/openRouterEdge.ts
-
 import { supabase } from './supabaseClient';
-import type { OpenRouterMessage, OpenRouterResponse } from './openRouterClient';
+import type { OpenRouterMessage, OpenRouterResponse } from '../types';
 
 export const chatWithOpenRouterViaEdge = async (
   model: string,

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Paperclip, ChevronDown, ChevronUp, Bot, User, Database, ShieldCheck, Loader2, Sparkles, AlertCircle } from 'lucide-react';
+import { Send, Paperclip, ChevronDown, ChevronUp, Bot, User, Database, ShieldCheck, Loader2, Sparkles, AlertCircle, Plus, MessageSquare } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
 import { chatWithOpenRouterViaEdge } from '../lib/openRouterEdge';
@@ -10,6 +10,7 @@ interface Message {
     role: 'user' | 'assistant';
     content: string;
     model_used?: string;
+    sql_query?: string; // New field for internal SQL logging (if we decide to show it later)
 }
 
 interface Conversation {
@@ -29,6 +30,9 @@ const Chat: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Hidden feature flag for SQL debug (can be enabled via query param or user role later)
+  const SHOW_SQL_DEBUG = false;
 
   const [selectedModel, setSelectedModel] = useState<string>('google/gemini-2.0-flash-lite-preview-02-05:free');
 
@@ -171,10 +175,19 @@ const Chat: React.FC = () => {
     setMessages(prev => [...prev, userMessage]);
 
     // Construct message history for LLM context
+    // We instruct the LLM to behave as a data analyst.
+    // In a real implementation with Text-to-SQL, the Edge Function handles the "tool calling"
+    // to query the database. Here, we simulate that the Edge Function does it.
     const openRouterMessages: OpenRouterMessage[] = [
-        { role: 'system', content: `Você é um assistente de IA especialista em manufatura e PCP (Planejamento e Controle da Produção), conectado ao ERP Planintex.
-        Seu objetivo é ajudar gestores a entender seus dados. Responda em Português do Brasil.
-        Você tem acesso (simulado) a tabelas de 'ordens', 'estoque' e 'previsão'.` },
+        { role: 'system', content: `Você é o DRoweder IA, um assistente especialista em manufatura conectado ao ERP Planintex.
+
+        INSTRUÇÕES DE BACKEND (Simulação):
+        1. O usuário fará perguntas sobre dados (ordens, estoque, previsão).
+        2. Você (o backend) deve consultar o banco de dados (simulado) para obter os números reais.
+        3. Responda ao usuário final APENAS com a análise em linguagem natural e os dados formatados (tabelas markdown, listas).
+        4. NÃO exponha o comando SQL bruto na resposta final, a menos que o usuário peça explicitamente "Mostre o SQL".
+        5. Seja conciso, profissional e use Português do Brasil.
+        ` },
         ...messages.map(m => ({ role: m.role, content: m.content }) as OpenRouterMessage),
         { role: 'user', content: newMessageContent }
     ];
@@ -225,74 +238,92 @@ const Chat: React.FC = () => {
 
   return (
     <div className="flex h-full bg-white dark:bg-gray-900 overflow-hidden transition-colors duration-200">
-      {/* Sidebar - History */}
-      <div className="w-64 border-r border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 flex flex-col hidden md:flex transition-colors duration-200">
-        <div className="p-4 font-semibold text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-800 text-sm uppercase tracking-wider flex justify-between items-center">
-            <span>Histórico</span>
-            <button
+
+      {/* Sidebar - History (Refined Style) */}
+      <div className="w-64 border-r border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-black flex flex-col hidden md:flex transition-colors duration-200">
+         {/* Sidebar header removed as requested to be like ChatGPT (buttons moved to Layout or kept clean) */}
+         {/* Assuming Layout handles the global nav, this sidebar might be redundant or specific to chat history.
+             If we want ChatGPT style, the global sidebar in Layout is actually the history sidebar.
+             For now, I will keep a simple list of conversations here if it's meant to be a secondary panel,
+             OR if we assume the Layout sidebar IS the main nav.
+
+             Let's sync with Layout: Layout has the apps. Chat history is specific to Chat.
+             ChatGPT has one sidebar for history.
+             Current architecture: Global Layout Sidebar + Local Page Content.
+             I will keep the "History" list here as a "Recent Chats" panel.
+          */}
+        <div className="p-3">
+             <button
                 onClick={() => setActiveConversationId(null)}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded text-xs transition-colors"
-            >
-                NOVA
-            </button>
+                className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-sm font-medium transition-colors"
+             >
+                <Plus size={16} />
+                Nova Conversa
+             </button>
         </div>
-        <div className="flex-1 overflow-y-auto p-2 space-y-1">
+
+        <div className="flex-1 overflow-y-auto px-2 space-y-1">
+            <div className="px-2 py-2 text-xs font-semibold text-gray-500 uppercase">Hoje</div>
             {conversations.map(conv => (
                 <button
                     key={conv.id}
                     onClick={() => setActiveConversationId(conv.id)}
-                    className={`w-full text-left px-3 py-2.5 rounded-lg text-sm flex items-center gap-3 transition-colors truncate ${activeConversationId === conv.id ? 'bg-white dark:bg-gray-800 shadow-sm text-indigo-700 dark:text-indigo-400 font-medium ring-1 ring-gray-200 dark:ring-gray-700' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
+                    className={`w-full text-left px-3 py-2.5 rounded-md text-sm flex items-center gap-3 transition-colors truncate group ${activeConversationId === conv.id ? 'bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-gray-100' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-900'}`}
                 >
-                    <Bot size={16} className={activeConversationId === conv.id ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-400'} />
-                    <span className="truncate">{conv.title}</span>
+                    <MessageSquare size={16} className="text-gray-400 group-hover:text-gray-500" />
+                    <span className="truncate flex-1">{conv.title}</span>
                 </button>
             ))}
             {conversations.length === 0 && (
-                <div className="text-center p-4 text-xs text-gray-400">Nenhuma conversa ainda.</div>
+                <div className="text-center p-4 text-xs text-gray-400">Nenhuma conversa recente.</div>
             )}
         </div>
       </div>
 
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col min-w-0 bg-white dark:bg-gray-900 transition-colors duration-200">
-        {/* Header */}
-        <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center bg-white dark:bg-gray-900 shadow-sm z-10 transition-colors duration-200">
+        {/* Header - Simplified */}
+        <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center bg-white dark:bg-gray-900 shadow-sm z-10">
             <div className="flex items-center gap-4">
-                <h2 className="font-semibold text-gray-800 dark:text-gray-100 flex items-center gap-2">
-                    <Bot className="text-indigo-600 dark:text-indigo-400" size={20} />
-                    Assistente de PCP
-                </h2>
-
-                {/* Model Selector */}
+                 {/* Model Selector */}
                 <div className="relative group">
                     <select
                         value={selectedModel}
                         onChange={(e) => setSelectedModel(e.target.value)}
-                        className="appearance-none bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 text-xs rounded-lg py-1.5 pl-3 pr-8 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
+                        className="appearance-none bg-transparent font-medium text-gray-700 dark:text-gray-200 text-sm hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg py-1.5 pl-2 pr-8 focus:outline-none cursor-pointer transition-colors"
                     >
                         {models.map(model => (
                             <option key={model.id} value={model.id}>{model.name}</option>
                         ))}
                     </select>
-                    <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                    <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                 </div>
             </div>
 
-            <div className="flex items-center gap-2 text-xs font-medium text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-3 py-1.5 rounded-full border border-emerald-200 dark:border-emerald-800">
-                <ShieldCheck size={14} />
-                <span className="hidden sm:inline">Conectado de forma segura ao Planintex</span>
-                <span className="sm:hidden">Seguro</span>
+            {/* Connection Badge */}
+            <div className="flex items-center gap-2 text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded-full">
+                <ShieldCheck size={14} className="text-emerald-500" />
+                <span className="hidden sm:inline">Planintex Conectado</span>
             </div>
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 bg-gray-50/50 dark:bg-gray-950 transition-colors duration-200">
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 bg-white dark:bg-gray-900 scrollbar-thin">
             {messages.length === 0 && !loading && (
-                <div className="flex flex-col items-center justify-center h-full text-gray-400 space-y-4">
-                    <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-2xl flex items-center justify-center mb-2">
-                        <Sparkles size={32} className="text-indigo-500 dark:text-indigo-400" />
+                <div className="flex flex-col items-center justify-center h-full text-gray-400 space-y-6">
+                    <div className="w-16 h-16 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-sm border border-gray-100 dark:border-gray-700">
+                        <Bot size={32} className="text-gray-900 dark:text-gray-100" />
                     </div>
-                    <p className="text-gray-500 dark:text-gray-400 font-medium">Como posso ajudar com sua produção hoje?</p>
+                    <div className="grid grid-cols-2 gap-4 max-w-lg w-full">
+                        <button onClick={() => setInput("Qual a previsão de demanda para o próximo mês?")} className="p-4 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 text-left transition-colors">
+                            <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">Previsão de Demanda</h3>
+                            <p className="text-xs text-gray-500">Analise tendências futuras</p>
+                        </button>
+                         <button onClick={() => setInput("Quais ordens estão atrasadas?")} className="p-4 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 text-left transition-colors">
+                            <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">Ordens Atrasadas</h3>
+                            <p className="text-xs text-gray-500">Liste gargalos na produção</p>
+                        </button>
+                    </div>
                 </div>
             )}
 
@@ -311,51 +342,48 @@ const Chat: React.FC = () => {
             )}
 
             {messages.map((msg) => (
-                <div key={msg.id} className={`flex gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : ''} animate-in fade-in slide-in-from-bottom-2 duration-300`}>
-                    <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm ${msg.role === 'user' ? 'bg-indigo-600 text-white' : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-emerald-600 dark:text-emerald-400'}`}>
-                        {msg.role === 'user' ? <User size={18} /> : <Bot size={18} />}
+                <div key={msg.id} className={`flex gap-4 max-w-3xl mx-auto w-full animate-in fade-in slide-in-from-bottom-2 duration-300 group`}>
+                    <div className={`w-8 h-8 rounded-sm flex items-center justify-center flex-shrink-0 ${msg.role === 'user' ? 'bg-gray-200 dark:bg-gray-700' : 'bg-emerald-600 text-white'}`}>
+                        {msg.role === 'user' ? <User size={16} className="text-gray-600 dark:text-gray-300" /> : <Bot size={16} />}
                     </div>
-                    <div className={`max-w-[85%] md:max-w-[70%] space-y-2`}>
-                        <div className={`p-4 rounded-2xl text-sm shadow-sm leading-relaxed whitespace-pre-wrap ${msg.role === 'user' ? 'bg-indigo-600 text-white rounded-tr-none' : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 rounded-tl-none'}`}>
+
+                    <div className="flex-1 space-y-2 overflow-hidden">
+                        <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                            {msg.role === 'user' ? 'Você' : 'DRoweder IA'}
+                        </div>
+                        <div className="prose prose-sm dark:prose-invert max-w-none text-gray-800 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
                             {msg.content}
                         </div>
 
-                        {/* Mock Text-to-SQL Accordion for Assistant */}
-                        {msg.role === 'assistant' && (
-                            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden text-xs shadow-sm w-full max-w-lg transition-colors duration-200">
+                        {/* Hidden/Debug SQL Accordion */}
+                        {SHOW_SQL_DEBUG && msg.role === 'assistant' && (
+                            <div className="mt-2">
                                 <button
                                     onClick={() => toggleSql(msg.id)}
-                                    className="w-full flex items-center justify-between px-3 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors bg-gray-50/50 dark:bg-gray-800/50"
+                                    className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                                 >
-                                    <div className="flex items-center gap-2">
-                                        <Database size={14} className="text-blue-600 dark:text-blue-400" />
-                                        <span className="font-medium text-blue-900 dark:text-blue-300">Ver SQL Gerado (Simulação)</span>
-                                    </div>
-                                    {showSql === msg.id ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                                    <Database size={12} />
+                                    <span>{showSql === msg.id ? 'Ocultar SQL' : 'Debug SQL'}</span>
                                 </button>
                                 {showSql === msg.id && (
-                                    <div className="p-3 bg-slate-900 text-blue-300 font-mono overflow-x-auto border-t border-gray-200 dark:border-gray-700 text-[11px] leading-relaxed">
-                                        <code>SELECT * FROM planintex.ordens LIMIT 5; -- Exemplo</code>
+                                    <div className="mt-2 p-3 bg-gray-100 dark:bg-gray-900 rounded-md border border-gray-200 dark:border-gray-800 font-mono text-xs overflow-x-auto text-gray-600 dark:text-gray-400">
+                                        SELECT * FROM planintex.ordens ...
                                     </div>
                                 )}
-                            </div>
-                        )}
-
-                        {msg.role === 'assistant' && msg.model_used && (
-                            <div className="text-[10px] text-gray-400 text-right pr-1">
-                                Gerado por {msg.model_used}
                             </div>
                         )}
                     </div>
                 </div>
             ))}
              {loading && (
-                <div className="flex gap-4 animate-pulse">
-                    <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-emerald-600 dark:text-emerald-400">
-                        <Loader2 size={18} className="animate-spin" />
+                <div className="flex gap-4 max-w-3xl mx-auto w-full">
+                    <div className="w-8 h-8 rounded-sm bg-emerald-600 text-white flex items-center justify-center flex-shrink-0">
+                        <Loader2 size={16} className="animate-spin" />
                     </div>
-                    <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 p-4 rounded-2xl rounded-tl-none text-sm shadow-sm flex items-center gap-2">
-                        <span>Processando...</span>
+                    <div className="flex items-center">
+                        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce mr-1"></span>
+                        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce mr-1 delay-100"></span>
+                        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200"></span>
                     </div>
                 </div>
             )}
@@ -363,33 +391,36 @@ const Chat: React.FC = () => {
         </div>
 
         {/* Input Area */}
-        <div className="p-4 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 transition-colors duration-200">
-            <div className="max-w-4xl mx-auto space-y-3">
-                <div className="relative group">
-                    <input
-                        type="text"
+        <div className="p-4 bg-white dark:bg-gray-900">
+            <div className="max-w-3xl mx-auto">
+                <div className="relative group bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500 transition-all">
+                    <textarea
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                        placeholder="Pergunte sobre sua produção..."
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                handleSendMessage();
+                            }
+                        }}
+                        placeholder="Envie uma mensagem para o Planintex..."
                         disabled={loading}
-                        className="w-full pl-4 pr-12 py-3.5 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all text-sm text-gray-900 dark:text-gray-100 group-hover:bg-white dark:group-hover:bg-gray-800 group-hover:shadow-sm disabled:opacity-50"
+                        rows={1}
+                        className="w-full pl-4 pr-12 py-3.5 bg-transparent resize-none focus:outline-none text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 disabled:opacity-50 max-h-32"
+                        style={{ minHeight: '52px' }}
                     />
-                    <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-                        <button className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
-                            <Paperclip size={18} />
-                        </button>
+                    <div className="absolute right-2 bottom-2 flex items-center gap-1">
                         <button
                             onClick={handleSendMessage}
                             disabled={!input.trim() || loading}
-                            className="p-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                            className={`p-2 rounded-lg transition-colors ${!input.trim() || loading ? 'bg-gray-100 dark:bg-gray-700 text-gray-400' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}
                         >
                             <Send size={16} />
                         </button>
                     </div>
                 </div>
-                <div className="text-center">
-                    <p className="text-[10px] text-gray-400 dark:text-gray-500">A IA pode cometer erros. Verifique informações importantes.</p>
+                <div className="text-center mt-2">
+                    <p className="text-[10px] text-gray-400 dark:text-gray-500">DRoweder IA pode cometer erros. Considere verificar informações importantes.</p>
                 </div>
             </div>
         </div>

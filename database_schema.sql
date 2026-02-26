@@ -8,7 +8,7 @@ CREATE SCHEMA IF NOT EXISTS droweder_ia;
 -- 2. Tabelas do Schema Planintex (Mock para dependências)
 CREATE TABLE IF NOT EXISTS planintex.empresas (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name TEXT NOT NULL,
+    nome TEXT NOT NULL, -- Updated to Portuguese 'nome' based on live schema
     cnpj TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS planintex.empresas (
 CREATE TABLE IF NOT EXISTS planintex.users (
     id UUID PRIMARY KEY, -- Deve corresponder ao auth.users.id do Supabase
     company_id UUID NOT NULL REFERENCES planintex.empresas(id),
-    name TEXT,
+    name TEXT, -- Keeping 'name' for now, but live might be 'nome'. If errors occur, update to 'nome'.
     email TEXT,
     role TEXT DEFAULT 'user'
 );

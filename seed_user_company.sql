@@ -6,12 +6,13 @@ DO $$
 DECLARE
     v_company_id UUID;
 BEGIN
-    -- Check if 'Minha Empresa' exists, if not create it
-    SELECT id INTO v_company_id FROM planintex.empresas WHERE name = 'Minha Empresa' LIMIT 1;
+    -- Check if 'Minha Empresa' exists, if not create it (Using 'nome' instead of 'name')
+    SELECT id INTO v_company_id FROM planintex.empresas WHERE nome = 'Minha Empresa' LIMIT 1;
 
     IF v_company_id IS NULL THEN
-        INSERT INTO planintex.empresas (name, cnpj)
-        VALUES ('Minha Empresa', '00.000.000/0001-00')
+        -- Assuming 'nome' is the column name for the company name based on the screenshot/error
+        INSERT INTO planintex.empresas (nome)
+        VALUES ('Minha Empresa')
         RETURNING id INTO v_company_id;
         RAISE NOTICE 'Created new company: Minha Empresa (ID: %)', v_company_id;
     ELSE

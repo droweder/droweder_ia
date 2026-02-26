@@ -23,12 +23,13 @@ BEGIN
         RETURN;
     END IF;
 
-    -- Check if 'Minha Empresa' exists, create if not
-    SELECT id INTO v_company_id FROM planintex.empresas WHERE name = 'Minha Empresa' LIMIT 1;
+    -- Check if 'Minha Empresa' exists, create if not (Using 'nome' instead of 'name')
+    SELECT id INTO v_company_id FROM planintex.empresas WHERE nome = 'Minha Empresa' LIMIT 1;
 
     IF v_company_id IS NULL THEN
-        INSERT INTO planintex.empresas (name, cnpj)
-        VALUES ('Minha Empresa', '00.000.000/0001-00')
+        -- Assuming 'nome' is the column name for the company name
+        INSERT INTO planintex.empresas (nome)
+        VALUES ('Minha Empresa')
         RETURNING id INTO v_company_id;
     END IF;
 

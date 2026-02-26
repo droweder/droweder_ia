@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, Paperclip, ChevronDown, ChevronUp, Bot, User, Database, ShieldCheck, Loader2, AlertCircle, Plus, MessageSquare } from 'lucide-react';
+import { Send, ChevronDown, Bot, User, Database, ShieldCheck, Loader2, AlertCircle, Plus, MessageSquare } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
 import { chatWithOpenRouterViaEdge } from '../lib/openRouterEdge';

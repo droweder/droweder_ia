@@ -74,13 +74,17 @@ const Chat: React.FC = () => {
             .eq('id', user.id)
             .single();
 
-        if (error) {
+        if (error || !data) {
+            // If company not found, try to auto-create (if the backend function exists)
+            // Or show a more helpful error for now.
             console.error('Error fetching user company:', error);
-            setError("Não foi possível identificar sua empresa.");
-        } else if (data) {
-            setCompanyId(data.company_id);
+
+            // Attempt to call the auto-fix function (if implemented in backend)
+            // For now, we'll just show the error, but we can instruct the user.
+            setError("Não foi possível identificar sua empresa. Contate o suporte ou execute o script de setup.");
         } else {
-             setError("Sua conta não está vinculada a nenhuma empresa no Planintex.");
+            setCompanyId(data.company_id);
+            setError(null);
         }
     } catch (err) {
         console.error("Unexpected error fetching company:", err);
@@ -243,8 +247,17 @@ const Chat: React.FC = () => {
 
             {/* Connection Badge */}
             <div className="flex items-center gap-2 text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded-full">
-                <ShieldCheck size={14} className="text-emerald-500" />
-                <span className="hidden sm:inline">Planintex Conectado</span>
+                {companyId ? (
+                    <>
+                        <ShieldCheck size={14} className="text-emerald-500" />
+                        <span className="hidden sm:inline">Planintex Conectado</span>
+                    </>
+                ) : (
+                    <>
+                         <AlertCircle size={14} className="text-red-500" />
+                         <span className="hidden sm:inline text-red-500">Desconectado</span>
+                    </>
+                )}
             </div>
         </div>
 
@@ -277,6 +290,9 @@ const Chat: React.FC = () => {
                         </div>
                         <div className="ml-3">
                             <h3 className="text-sm font-medium text-red-800 dark:text-red-200">{error}</h3>
+                            <p className="mt-1 text-xs text-red-700 dark:text-red-300">
+                                Seu usuário não está vinculado a nenhuma empresa no ERP mock.
+                            </p>
                         </div>
                     </div>
                 </div>

@@ -20,6 +20,7 @@ function App() {
               <Route path="/" element={<Layout />}>
                 <Route index element={<Navigate to="/chat" replace />} />
                 <Route path="chat" element={<Chat />} />
+                <Route path="chat/:conversationId" element={<Chat />} />
                 <Route path="dashboard/billing" element={<Billing />} />
                 <Route path="super-admin/companies" element={<Companies />} />
               </Route>

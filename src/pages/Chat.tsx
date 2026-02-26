@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, ChevronDown, Bot, User, Database, ShieldCheck, Loader2, AlertCircle, Plus, MessageSquare } from 'lucide-react';
+import { Send, ChevronDown, Bot, User, Database, ShieldCheck, Loader2, AlertCircle } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
 import { chatWithOpenRouterViaEdge } from '../lib/openRouterEdge';
 import type { OpenRouterMessage } from '../types';
+import { useParams, useNavigate } from 'react-router-dom';
 
 interface Message {
     id: string;
@@ -13,17 +14,12 @@ interface Message {
     sql_query?: string; // New field for internal SQL logging (if we decide to show it later)
 }
 
-interface Conversation {
-    id: string;
-    title: string;
-    created_at: string;
-}
-
 const Chat: React.FC = () => {
+  const { conversationId: routeConversationId } = useParams<{ conversationId?: string }>();
+  const navigate = useNavigate();
   const [input, setInput] = useState('');
   const [showSql, setShowSql] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [companyId, setCompanyId] = useState<string | null>(null);
@@ -46,17 +42,19 @@ const Chat: React.FC = () => {
   useEffect(() => {
     if (user) {
         fetchCompanyId();
-        fetchConversations();
     }
   }, [user]);
 
   useEffect(() => {
-    if (activeConversationId) {
-        fetchMessages(activeConversationId);
-    } else {
-        setMessages([]); // Clear messages when creating new conversation
-    }
-  }, [activeConversationId]);
+      // Sync URL parameter with local state
+      if (routeConversationId) {
+          setActiveConversationId(routeConversationId);
+          fetchMessages(routeConversationId);
+      } else {
+          setActiveConversationId(null);
+          setMessages([]);
+      }
+  }, [routeConversationId]);
 
   useEffect(() => {
     scrollToBottom();
@@ -86,22 +84,6 @@ const Chat: React.FC = () => {
         }
     } catch (err) {
         console.error("Unexpected error fetching company:", err);
-    }
-  };
-
-  const fetchConversations = async () => {
-    const { data, error } = await supabase
-        .schema('droweder_ia')
-        .from('conversations')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-    if (error) console.error('Error fetching conversations:', error);
-    if (data) {
-        setConversations(data);
-        if (data.length > 0 && !activeConversationId) {
-            setActiveConversationId(data[0].id);
-        }
     }
   };
 
@@ -151,7 +133,11 @@ const Chat: React.FC = () => {
         }
         conversationId = newConv.id;
         setActiveConversationId(newConv.id);
-        setConversations([newConv, ...conversations]);
+        // Navigate to the new conversation URL to sync sidebar and URL
+        navigate(`/chat/${newConv.id}`);
+        // We continue here for the optimistic update, but the useEffect will also trigger fetchMessages shortly
+        // To avoid double fetching or race conditions, we can let the useEffect handle it,
+        // BUT for smooth UX (optimistic update), we continue processing here.
     }
 
     // Save user message
@@ -175,9 +161,6 @@ const Chat: React.FC = () => {
     setMessages(prev => [...prev, userMessage]);
 
     // Construct message history for LLM context
-    // We instruct the LLM to behave as a data analyst.
-    // In a real implementation with Text-to-SQL, the Edge Function handles the "tool calling"
-    // to query the database. Here, we simulate that the Edge Function does it.
     const openRouterMessages: OpenRouterMessage[] = [
         { role: 'system', content: `Você é o DRoweder IA, um assistente especialista em manufatura conectado ao ERP Planintex.
 
@@ -238,48 +221,6 @@ const Chat: React.FC = () => {
 
   return (
     <div className="flex h-full bg-white dark:bg-gray-900 overflow-hidden transition-colors duration-200">
-
-      {/* Sidebar - History (Refined Style) */}
-      <div className="w-64 border-r border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-black flex flex-col hidden md:flex transition-colors duration-200">
-         {/* Sidebar header removed as requested to be like ChatGPT (buttons moved to Layout or kept clean) */}
-         {/* Assuming Layout handles the global nav, this sidebar might be redundant or specific to chat history.
-             If we want ChatGPT style, the global sidebar in Layout is actually the history sidebar.
-             For now, I will keep a simple list of conversations here if it's meant to be a secondary panel,
-             OR if we assume the Layout sidebar IS the main nav.
-
-             Let's sync with Layout: Layout has the apps. Chat history is specific to Chat.
-             ChatGPT has one sidebar for history.
-             Current architecture: Global Layout Sidebar + Local Page Content.
-             I will keep the "History" list here as a "Recent Chats" panel.
-          */}
-        <div className="p-3">
-             <button
-                onClick={() => setActiveConversationId(null)}
-                className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-sm font-medium transition-colors"
-             >
-                <Plus size={16} />
-                Nova Conversa
-             </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto px-2 space-y-1">
-            <div className="px-2 py-2 text-xs font-semibold text-gray-500 uppercase">Hoje</div>
-            {conversations.map(conv => (
-                <button
-                    key={conv.id}
-                    onClick={() => setActiveConversationId(conv.id)}
-                    className={`w-full text-left px-3 py-2.5 rounded-md text-sm flex items-center gap-3 transition-colors truncate group ${activeConversationId === conv.id ? 'bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-gray-100' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-900'}`}
-                >
-                    <MessageSquare size={16} className="text-gray-400 group-hover:text-gray-500" />
-                    <span className="truncate flex-1">{conv.title}</span>
-                </button>
-            ))}
-            {conversations.length === 0 && (
-                <div className="text-center p-4 text-xs text-gray-400">Nenhuma conversa recente.</div>
-            )}
-        </div>
-      </div>
-
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col min-w-0 bg-white dark:bg-gray-900 transition-colors duration-200">
         {/* Header - Simplified */}

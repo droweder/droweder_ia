@@ -1,34 +1,31 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, ChevronDown, Bot, User, Database, ShieldCheck, Loader2, AlertCircle, Plus, MessageSquare } from 'lucide-react';
+import { Send, ChevronDown, Bot, User, Database, ShieldCheck, Loader2, AlertCircle } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
+import { useChat } from '../contexts/ChatContext';
 import { chatWithOpenRouterViaEdge } from '../lib/openRouterEdge';
 import type { OpenRouterMessage } from '../types';
+import { useParams, useNavigate } from 'react-router-dom';
 
 interface Message {
     id: string;
     role: 'user' | 'assistant';
     content: string;
     model_used?: string;
-    sql_query?: string; // New field for internal SQL logging (if we decide to show it later)
-}
-
-interface Conversation {
-    id: string;
-    title: string;
-    created_at: string;
+    sql_query?: string;
 }
 
 const Chat: React.FC = () => {
+  const { conversationId: routeConversationId } = useParams<{ conversationId?: string }>();
+  const navigate = useNavigate();
   const [input, setInput] = useState('');
   const [showSql, setShowSql] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [companyId, setCompanyId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [isSending, setIsSending] = useState(false);
+  const [chatError, setChatError] = useState<string | null>(null);
   const { user } = useAuth();
+  const { companyId, error: contextError, addConversation } = useChat();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Hidden feature flag for SQL debug (can be enabled via query param or user role later)
@@ -44,65 +41,22 @@ const Chat: React.FC = () => {
   ];
 
   useEffect(() => {
-    if (user) {
-        fetchCompanyId();
-        fetchConversations();
-    }
-  }, [user]);
-
-  useEffect(() => {
-    if (activeConversationId) {
-        fetchMessages(activeConversationId);
-    } else {
-        setMessages([]); // Clear messages when creating new conversation
-    }
-  }, [activeConversationId]);
+      // Sync URL parameter with local state
+      if (routeConversationId) {
+          setActiveConversationId(routeConversationId);
+          fetchMessages(routeConversationId);
+      } else {
+          setActiveConversationId(null);
+          setMessages([]);
+      }
+  }, [routeConversationId]);
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, loading]);
+  }, [messages, isSending]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  const fetchCompanyId = async () => {
-    if (!user) return;
-    try {
-        const { data, error } = await supabase
-            .schema('planintex')
-            .from('users')
-            .select('company_id')
-            .eq('id', user.id)
-            .single();
-
-        if (error) {
-            console.error('Error fetching user company:', error);
-            setError("Não foi possível identificar sua empresa.");
-        } else if (data) {
-            setCompanyId(data.company_id);
-        } else {
-             setError("Sua conta não está vinculada a nenhuma empresa no Planintex.");
-        }
-    } catch (err) {
-        console.error("Unexpected error fetching company:", err);
-    }
-  };
-
-  const fetchConversations = async () => {
-    const { data, error } = await supabase
-        .schema('droweder_ia')
-        .from('conversations')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-    if (error) console.error('Error fetching conversations:', error);
-    if (data) {
-        setConversations(data);
-        if (data.length > 0 && !activeConversationId) {
-            setActiveConversationId(data[0].id);
-        }
-    }
   };
 
   const fetchMessages = async (conversationId: string) => {
@@ -118,40 +72,56 @@ const Chat: React.FC = () => {
   };
 
   const handleSendMessage = async () => {
-    if (!input.trim() || !user || !companyId) {
-        if (!companyId) setError("Empresa não identificada. Contate o suporte.");
+    if (!input.trim() || !user) {
+         if (!user) setChatError("Usuário não autenticado.");
+         return;
+    }
+    if (!companyId) {
+        setChatError("Empresa não identificada. Aguarde o carregamento ou contate o suporte.");
         return;
     }
 
     const newMessageContent = input;
     setInput('');
-    setLoading(true);
-    setError(null);
+    setIsSending(true);
+    setChatError(null);
 
     let conversationId = activeConversationId;
 
     // Create conversation if none exists
     if (!conversationId) {
+        const title = newMessageContent.substring(0, 30) + '...';
         const { data: newConv, error: convError } = await supabase
             .schema('droweder_ia')
             .from('conversations')
             .insert({
                 user_id: user.id,
                 company_id: companyId,
-                title: newMessageContent.substring(0, 30) + '...',
+                title: title,
             })
             .select()
             .single();
 
         if (convError || !newConv) {
             console.error('Error creating conversation:', convError);
-            setError("Erro ao iniciar conversa.");
-            setLoading(false);
+            setChatError("Erro ao iniciar conversa.");
+            setIsSending(false);
             return;
         }
         conversationId = newConv.id;
         setActiveConversationId(newConv.id);
-        setConversations([newConv, ...conversations]);
+
+        // Update Sidebar immediately via Context
+        addConversation({
+            id: newConv.id,
+            title: newConv.title,
+            created_at: newConv.created_at,
+            company_id: newConv.company_id,
+            user_id: newConv.user_id
+        });
+
+        // Navigate to the new conversation URL to sync sidebar and URL
+        navigate(`/chat/${newConv.id}`);
     }
 
     // Save user message
@@ -166,7 +136,8 @@ const Chat: React.FC = () => {
 
     if (msgError) {
         console.error('Error saving message:', msgError);
-        setLoading(false);
+        setChatError("Erro ao salvar mensagem.");
+        setIsSending(false);
         return;
     }
 
@@ -175,9 +146,6 @@ const Chat: React.FC = () => {
     setMessages(prev => [...prev, userMessage]);
 
     // Construct message history for LLM context
-    // We instruct the LLM to behave as a data analyst.
-    // In a real implementation with Text-to-SQL, the Edge Function handles the "tool calling"
-    // to query the database. Here, we simulate that the Edge Function does it.
     const openRouterMessages: OpenRouterMessage[] = [
         { role: 'system', content: `Você é o DRoweder IA, um assistente especialista em manufatura conectado ao ERP Planintex.
 
@@ -194,6 +162,10 @@ const Chat: React.FC = () => {
 
     try {
         const aiResponse = await chatWithOpenRouterViaEdge(selectedModel, openRouterMessages);
+
+        if (!aiResponse) {
+             throw new Error("No response from AI Edge Function");
+        }
 
         const aiContent = aiResponse?.choices[0]?.message?.content || "Desculpe, não consegui processar sua solicitação no momento.";
         const modelUsed = aiResponse?.model || selectedModel;
@@ -215,15 +187,27 @@ const Chat: React.FC = () => {
             setMessages(prev => [...prev, aiMsg as Message]);
         } else if (aiError) {
              console.error('Error saving AI message:', aiError);
-             // Show error in UI as fallback
              setMessages(prev => [...prev, { id: 'err-' + Date.now(), role: 'assistant', content: "Erro ao salvar resposta no histórico." }]);
         }
 
-    } catch (error) {
+    } catch (error: any) {
         console.error("LLM Error:", error);
-        setMessages(prev => [...prev, { id: 'err-' + Date.now(), role: 'assistant', content: "Erro de conexão com a IA. Tente novamente." }]);
+
+        // Try to extract useful error message from the object if possible
+        let errorMessage = "Erro de conexão com a IA. Tente novamente.";
+
+        if (error && typeof error === 'object') {
+             // Supabase Functions often return the error in a specific structure
+             if (error.message) {
+                 errorMessage = `Erro: ${error.message}`;
+             } else if (error.error) { // sometimes strictly { error: "..." }
+                 errorMessage = `Erro: ${error.error}`;
+             }
+        }
+
+        setMessages(prev => [...prev, { id: 'err-' + Date.now(), role: 'assistant', content: errorMessage }]);
     } finally {
-        setLoading(false);
+        setIsSending(false);
     }
   };
 
@@ -235,51 +219,11 @@ const Chat: React.FC = () => {
     }
   }
 
+  // Combine context error (company fetch) with local chat error
+  const displayError = chatError || contextError;
 
   return (
     <div className="flex h-full bg-white dark:bg-gray-900 overflow-hidden transition-colors duration-200">
-
-      {/* Sidebar - History (Refined Style) */}
-      <div className="w-64 border-r border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-black flex flex-col hidden md:flex transition-colors duration-200">
-         {/* Sidebar header removed as requested to be like ChatGPT (buttons moved to Layout or kept clean) */}
-         {/* Assuming Layout handles the global nav, this sidebar might be redundant or specific to chat history.
-             If we want ChatGPT style, the global sidebar in Layout is actually the history sidebar.
-             For now, I will keep a simple list of conversations here if it's meant to be a secondary panel,
-             OR if we assume the Layout sidebar IS the main nav.
-
-             Let's sync with Layout: Layout has the apps. Chat history is specific to Chat.
-             ChatGPT has one sidebar for history.
-             Current architecture: Global Layout Sidebar + Local Page Content.
-             I will keep the "History" list here as a "Recent Chats" panel.
-          */}
-        <div className="p-3">
-             <button
-                onClick={() => setActiveConversationId(null)}
-                className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-sm font-medium transition-colors"
-             >
-                <Plus size={16} />
-                Nova Conversa
-             </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto px-2 space-y-1">
-            <div className="px-2 py-2 text-xs font-semibold text-gray-500 uppercase">Hoje</div>
-            {conversations.map(conv => (
-                <button
-                    key={conv.id}
-                    onClick={() => setActiveConversationId(conv.id)}
-                    className={`w-full text-left px-3 py-2.5 rounded-md text-sm flex items-center gap-3 transition-colors truncate group ${activeConversationId === conv.id ? 'bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-gray-100' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-900'}`}
-                >
-                    <MessageSquare size={16} className="text-gray-400 group-hover:text-gray-500" />
-                    <span className="truncate flex-1">{conv.title}</span>
-                </button>
-            ))}
-            {conversations.length === 0 && (
-                <div className="text-center p-4 text-xs text-gray-400">Nenhuma conversa recente.</div>
-            )}
-        </div>
-      </div>
-
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col min-w-0 bg-white dark:bg-gray-900 transition-colors duration-200">
         {/* Header - Simplified */}
@@ -302,14 +246,23 @@ const Chat: React.FC = () => {
 
             {/* Connection Badge */}
             <div className="flex items-center gap-2 text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded-full">
-                <ShieldCheck size={14} className="text-emerald-500" />
-                <span className="hidden sm:inline">Planintex Conectado</span>
+                {companyId ? (
+                    <>
+                        <ShieldCheck size={14} className="text-emerald-500" />
+                        <span className="hidden sm:inline">Planintex Conectado</span>
+                    </>
+                ) : (
+                    <>
+                         <AlertCircle size={14} className="text-red-500" />
+                         <span className="hidden sm:inline text-red-500">Desconectado</span>
+                    </>
+                )}
             </div>
         </div>
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 bg-white dark:bg-gray-900 scrollbar-thin">
-            {messages.length === 0 && !loading && (
+            {messages.length === 0 && !isSending && (
                 <div className="flex flex-col items-center justify-center h-full text-gray-400 space-y-6">
                     <div className="w-16 h-16 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-sm border border-gray-100 dark:border-gray-700">
                         <Bot size={32} className="text-gray-900 dark:text-gray-100" />
@@ -328,14 +281,19 @@ const Chat: React.FC = () => {
             )}
 
             {/* Error Banner */}
-            {error && (
+            {displayError && (
                 <div className="rounded-md bg-red-50 dark:bg-red-900/20 p-4 border border-red-200 dark:border-red-800 mx-auto max-w-2xl mt-4">
                     <div className="flex">
                         <div className="flex-shrink-0">
                             <AlertCircle className="h-5 w-5 text-red-400" aria-hidden="true" />
                         </div>
                         <div className="ml-3">
-                            <h3 className="text-sm font-medium text-red-800 dark:text-red-200">{error}</h3>
+                            <h3 className="text-sm font-medium text-red-800 dark:text-red-200">{displayError}</h3>
+                            {!companyId && (
+                                <p className="mt-1 text-xs text-red-700 dark:text-red-300">
+                                    Seu usuário não está vinculado a nenhuma empresa no ERP mock.
+                                </p>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -375,7 +333,7 @@ const Chat: React.FC = () => {
                     </div>
                 </div>
             ))}
-             {loading && (
+             {isSending && (
                 <div className="flex gap-4 max-w-3xl mx-auto w-full">
                     <div className="w-8 h-8 rounded-sm bg-emerald-600 text-white flex items-center justify-center flex-shrink-0">
                         <Loader2 size={16} className="animate-spin" />
@@ -404,7 +362,7 @@ const Chat: React.FC = () => {
                             }
                         }}
                         placeholder="Envie uma mensagem para o Planintex..."
-                        disabled={loading}
+                        disabled={isSending}
                         rows={1}
                         className="w-full pl-4 pr-12 py-3.5 bg-transparent resize-none focus:outline-none text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 disabled:opacity-50 max-h-32"
                         style={{ minHeight: '52px' }}
@@ -412,8 +370,8 @@ const Chat: React.FC = () => {
                     <div className="absolute right-2 bottom-2 flex items-center gap-1">
                         <button
                             onClick={handleSendMessage}
-                            disabled={!input.trim() || loading}
-                            className={`p-2 rounded-lg transition-colors ${!input.trim() || loading ? 'bg-gray-100 dark:bg-gray-700 text-gray-400' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}
+                            disabled={!input.trim() || isSending}
+                            className={`p-2 rounded-lg transition-colors ${!input.trim() || isSending ? 'bg-gray-100 dark:bg-gray-700 text-gray-400' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}
                         >
                             <Send size={16} />
                         </button>

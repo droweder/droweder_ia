@@ -111,49 +111,83 @@ ALTER TABLE droweder_ia.billing_logs ENABLE ROW LEVEL SECURITY;
 
 -- Política para Conversations
 -- Usuários só podem acessar conversas da sua empresa
-CREATE POLICY "Users can access their company conversations" ON droweder_ia.conversations
-    FOR ALL
-    USING (
-        company_id IN (
-            SELECT company_id FROM planintex.users WHERE id = auth.uid()
-        )
-    )
-    WITH CHECK (
-        company_id IN (
-            SELECT company_id FROM planintex.users WHERE id = auth.uid()
-        )
-    );
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_policy
+        WHERE polname = 'Users can access their company conversations'
+        AND polrelid = 'droweder_ia.conversations'::regclass
+    ) THEN
+        CREATE POLICY "Users can access their company conversations" ON droweder_ia.conversations
+            FOR ALL
+            USING (
+                company_id IN (
+                    SELECT company_id FROM planintex.users WHERE id = auth.uid()
+                )
+            )
+            WITH CHECK (
+                company_id IN (
+                    SELECT company_id FROM planintex.users WHERE id = auth.uid()
+                )
+            );
+    END IF;
+END
+$$;
+
 
 -- Política para Messages
 -- Usuários só podem acessar mensagens de conversas da sua empresa
-CREATE POLICY "Users can access messages of their company conversations" ON droweder_ia.messages
-    FOR ALL
-    USING (
-        conversation_id IN (
-            SELECT id FROM droweder_ia.conversations
-            WHERE company_id IN (
-                SELECT company_id FROM planintex.users WHERE id = auth.uid()
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_policy
+        WHERE polname = 'Users can access messages of their company conversations'
+        AND polrelid = 'droweder_ia.messages'::regclass
+    ) THEN
+        CREATE POLICY "Users can access messages of their company conversations" ON droweder_ia.messages
+            FOR ALL
+            USING (
+                conversation_id IN (
+                    SELECT id FROM droweder_ia.conversations
+                    WHERE company_id IN (
+                        SELECT company_id FROM planintex.users WHERE id = auth.uid()
+                    )
+                )
             )
-        )
-    )
-    WITH CHECK (
-        conversation_id IN (
-            SELECT id FROM droweder_ia.conversations
-            WHERE company_id IN (
-                SELECT company_id FROM planintex.users WHERE id = auth.uid()
-            )
-        )
-    );
+            WITH CHECK (
+                conversation_id IN (
+                    SELECT id FROM droweder_ia.conversations
+                    WHERE company_id IN (
+                        SELECT company_id FROM planintex.users WHERE id = auth.uid()
+                    )
+                )
+            );
+    END IF;
+END
+$$;
 
 -- Política para Billing Logs
 -- Usuários só podem ver logs da sua empresa (Read Only recomendado para usuários comuns, Insert pelo sistema)
-CREATE POLICY "Users can view their company billing logs" ON droweder_ia.billing_logs
-    FOR SELECT
-    USING (
-        company_id IN (
-            SELECT company_id FROM planintex.users WHERE id = auth.uid()
-        )
-    );
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_policy
+        WHERE polname = 'Users can view their company billing logs'
+        AND polrelid = 'droweder_ia.billing_logs'::regclass
+    ) THEN
+        CREATE POLICY "Users can view their company billing logs" ON droweder_ia.billing_logs
+            FOR SELECT
+            USING (
+                company_id IN (
+                    SELECT company_id FROM planintex.users WHERE id = auth.uid()
+                )
+            );
+    END IF;
+END
+$$;
 
 -- (Opcional) Política de Insert para Billing Logs se for feito via função de banco ou admin
 -- Mas para o escopo atual, focamos na leitura do cliente.

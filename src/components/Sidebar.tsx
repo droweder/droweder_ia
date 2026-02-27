@@ -87,7 +87,7 @@ const Sidebar: React.FC = () => {
         <div className="px-4 pb-4">
              <button
                 onClick={() => navigate('/chat')}
-                className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 dark:bg-indigo-900/20 dark:text-indigo-300 dark:hover:bg-indigo-900/30 transition-colors text-sm font-medium text-left shadow-sm border border-indigo-100 dark:border-indigo-900/30"
+                className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-700 dark:bg-purple-900/20 dark:text-purple-300 dark:hover:bg-purple-900/30 transition-colors text-sm font-medium text-left shadow-sm border border-purple-100 dark:border-purple-900/30"
              >
                 <PenSquare size={18} />
                 <span>Novo chat</span>

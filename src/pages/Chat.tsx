@@ -314,7 +314,7 @@ const Chat: React.FC = () => {
             {/* Empty State / Welcome Screen */}
             {messages.length === 0 && !isSending && (
                 <div className="flex flex-col items-center justify-center h-full text-center space-y-6 animate-in fade-in duration-500">
-                    <div className="w-20 h-20 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-2xl flex items-center justify-center shadow-lg transform rotate-3 mb-2">
+                    <div className="w-20 h-20 bg-gradient-to-tr from-purple-500 to-indigo-500 rounded-2xl flex items-center justify-center shadow-lg transform rotate-3 mb-2">
                         <span className="text-3xl font-bold text-white">DR</span>
                     </div>
 
@@ -356,7 +356,7 @@ const Chat: React.FC = () => {
             <div className="space-y-6 max-w-3xl mx-auto pb-4">
                 {messages.map((msg) => (
                     <div key={msg.id} className={`flex gap-4 w-full animate-in fade-in slide-in-from-bottom-2 duration-300 group`}>
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-1 ${msg.role === 'user' ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gradient-to-tr from-indigo-500 to-purple-500 text-white'}`}>
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-1 ${msg.role === 'user' ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gradient-to-tr from-purple-500 to-indigo-500 text-white'}`}>
                             {msg.role === 'user' ? <User size={16} className="text-gray-500 dark:text-gray-400" /> : <Bot size={16} />}
                         </div>
 
@@ -390,7 +390,7 @@ const Chat: React.FC = () => {
                 ))}
                  {isSending && (
                     <div className="flex gap-4 w-full max-w-3xl mx-auto">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 text-white flex items-center justify-center flex-shrink-0 mt-1">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-500 to-indigo-500 text-white flex items-center justify-center flex-shrink-0 mt-1">
                             <Loader2 size={16} className="animate-spin" />
                         </div>
                         <div className="flex items-center h-8">
@@ -407,7 +407,7 @@ const Chat: React.FC = () => {
         {/* Floating Input Area */}
         <div className="absolute bottom-0 left-0 w-full p-6 bg-gradient-to-t from-white via-white to-transparent dark:from-gray-900 dark:via-gray-900 pb-8 z-20">
             <div className="max-w-3xl mx-auto">
-                <div className="relative group bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-[2rem] shadow-lg focus-within:ring-2 focus-within:ring-indigo-100 dark:focus-within:ring-indigo-900 transition-all">
+                <div className="relative group bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-[2rem] shadow-lg focus-within:ring-2 focus-within:ring-purple-100 dark:focus-within:ring-purple-900 transition-all">
 
                     {/* Left Icon (Plus) */}
                     <button className="absolute left-4 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">

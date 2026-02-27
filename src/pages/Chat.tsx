@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, ChevronDown, Bot, User, Database, Loader2, AlertCircle, Mic, MicOff } from 'lucide-react';
+import { ChevronDown, Bot, User, Database, Loader2, AlertCircle, Mic, MicOff, Plus } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
 import { useChat } from '../contexts/ChatContext';
@@ -282,44 +282,54 @@ const Chat: React.FC = () => {
   return (
     <div className="flex h-full bg-white dark:bg-gray-900 overflow-hidden transition-colors duration-200">
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col min-w-0 bg-white dark:bg-gray-900 transition-colors duration-200">
-        {/* Header - Simplified */}
-        <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center bg-white dark:bg-gray-900 shadow-sm z-10">
-            <div className="flex items-center gap-4">
-                 {/* Model Selector */}
+      <div className="flex-1 flex flex-col min-w-0 bg-white dark:bg-gray-900 transition-colors duration-200 relative">
+
+        {/* Header - Transparent/Minimal */}
+        <div className="absolute top-0 left-0 w-full p-4 flex justify-between items-center z-10 pointer-events-none">
+            <div className="pointer-events-auto">
+                 {/* Model Selector - Text Only Style */}
                 <div className="relative group">
                     <select
                         value={selectedModel}
                         onChange={(e) => setSelectedModel(e.target.value)}
-                        className="appearance-none bg-transparent font-medium text-gray-700 dark:text-gray-200 text-sm hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg py-1.5 pl-2 pr-8 focus:outline-none cursor-pointer transition-colors"
+                        className="appearance-none bg-transparent font-medium text-gray-600 dark:text-gray-300 text-sm py-1.5 pr-6 focus:outline-none cursor-pointer hover:text-gray-900 dark:hover:text-white transition-colors"
                     >
                         {models.map(model => (
                             <option key={model.id} value={model.id}>{model.name}</option>
                         ))}
                     </select>
-                    <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                    <ChevronDown size={14} className="absolute right-0 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                 </div>
             </div>
-
+            <div className="pointer-events-auto">
+                <button className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
+                    <div className="w-5 h-5 border border-gray-300 dark:border-gray-600 rounded"></div>
+                </button>
+            </div>
         </div>
 
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 bg-white dark:bg-gray-900 scrollbar-thin">
+        {/* Messages Container */}
+        <div className="flex-1 overflow-y-auto pt-16 pb-32 px-4 md:px-0 scrollbar-thin">
+
+            {/* Empty State / Welcome Screen */}
             {messages.length === 0 && !isSending && (
-                <div className="flex flex-col items-center justify-center h-full text-gray-400 space-y-6">
-                    <div className="w-16 h-16 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-sm border border-gray-100 dark:border-gray-700">
-                        <Bot size={32} className="text-gray-900 dark:text-gray-100" />
+                <div className="flex flex-col items-center justify-center h-full text-center space-y-6 animate-in fade-in duration-500">
+                    <div className="w-20 h-20 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-2xl flex items-center justify-center shadow-lg transform rotate-3 mb-2">
+                        <span className="text-3xl font-bold text-white">DR</span>
                     </div>
-                    <div className="grid grid-cols-2 gap-4 max-w-lg w-full">
-                        <button onClick={() => setInput("Qual a previsão de demanda para o próximo mês?")} className="p-4 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 text-left transition-colors">
-                            <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">Previsão de Demanda</h3>
-                            <p className="text-xs text-gray-500">Analise tendências futuras</p>
-                        </button>
-                         <button onClick={() => setInput("Quais ordens estão atrasadas?")} className="p-4 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 text-left transition-colors">
-                            <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">Ordens Atrasadas</h3>
-                            <p className="text-xs text-gray-500">Liste gargalos na produção</p>
-                        </button>
+
+                    <div className="space-y-2">
+                        <h1 className="text-3xl font-bold text-gray-900 dark:text-white tracking-tight">
+                            Olá, eu sou o DRoweder IA!
+                        </h1>
+                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">
+                            Em que posso te ajudar hoje?
+                        </h2>
                     </div>
+
+                    <p className="text-gray-500 max-w-md">
+                        Adicione documentos e arquivos para enriquecer nossa conversa.
+                    </p>
                 </div>
             )}
 
@@ -342,59 +352,68 @@ const Chat: React.FC = () => {
                 </div>
             )}
 
-            {messages.map((msg) => (
-                <div key={msg.id} className={`flex gap-4 max-w-3xl mx-auto w-full animate-in fade-in slide-in-from-bottom-2 duration-300 group`}>
-                    <div className={`w-8 h-8 rounded-sm flex items-center justify-center flex-shrink-0 ${msg.role === 'user' ? 'bg-gray-200 dark:bg-gray-700' : 'bg-emerald-600 text-white'}`}>
-                        {msg.role === 'user' ? <User size={16} className="text-gray-600 dark:text-gray-300" /> : <Bot size={16} />}
-                    </div>
-
-                    <div className="flex-1 space-y-2 overflow-hidden">
-                        <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                            {msg.role === 'user' ? 'Você' : 'DRoweder IA'}
-                        </div>
-                        <div className="prose prose-sm dark:prose-invert max-w-none text-gray-800 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
-                            {msg.content}
+            {/* Chat Messages */}
+            <div className="space-y-6 max-w-3xl mx-auto pb-4">
+                {messages.map((msg) => (
+                    <div key={msg.id} className={`flex gap-4 w-full animate-in fade-in slide-in-from-bottom-2 duration-300 group`}>
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 mt-1 ${msg.role === 'user' ? 'bg-gray-100 dark:bg-gray-800' : 'bg-gradient-to-tr from-indigo-500 to-purple-500 text-white'}`}>
+                            {msg.role === 'user' ? <User size={16} className="text-gray-500 dark:text-gray-400" /> : <Bot size={16} />}
                         </div>
 
-                        {/* Hidden/Debug SQL Accordion */}
-                        {SHOW_SQL_DEBUG && msg.role === 'assistant' && (
-                            <div className="mt-2">
-                                <button
-                                    onClick={() => toggleSql(msg.id)}
-                                    className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                                >
-                                    <Database size={12} />
-                                    <span>{showSql === msg.id ? 'Ocultar SQL' : 'Debug SQL'}</span>
-                                </button>
-                                {showSql === msg.id && (
-                                    <div className="mt-2 p-3 bg-gray-100 dark:bg-gray-900 rounded-md border border-gray-200 dark:border-gray-800 font-mono text-xs overflow-x-auto text-gray-600 dark:text-gray-400">
-                                        SELECT * FROM planintex.ordens ...
-                                    </div>
-                                )}
+                        <div className="flex-1 space-y-1 overflow-hidden">
+                            <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                                {msg.role === 'user' ? 'Você' : 'DRoweder IA'}
                             </div>
-                        )}
+                            <div className="prose prose-sm dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
+                                {msg.content}
+                            </div>
+
+                            {/* Hidden/Debug SQL Accordion */}
+                            {SHOW_SQL_DEBUG && msg.role === 'assistant' && (
+                                <div className="mt-2">
+                                    <button
+                                        onClick={() => toggleSql(msg.id)}
+                                        className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                                    >
+                                        <Database size={12} />
+                                        <span>{showSql === msg.id ? 'Ocultar SQL' : 'Debug SQL'}</span>
+                                    </button>
+                                    {showSql === msg.id && (
+                                        <div className="mt-2 p-3 bg-gray-100 dark:bg-gray-900 rounded-md border border-gray-200 dark:border-gray-800 font-mono text-xs overflow-x-auto text-gray-600 dark:text-gray-400">
+                                            SELECT * FROM planintex.ordens ...
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
                     </div>
-                </div>
-            ))}
-             {isSending && (
-                <div className="flex gap-4 max-w-3xl mx-auto w-full">
-                    <div className="w-8 h-8 rounded-sm bg-emerald-600 text-white flex items-center justify-center flex-shrink-0">
-                        <Loader2 size={16} className="animate-spin" />
+                ))}
+                 {isSending && (
+                    <div className="flex gap-4 w-full max-w-3xl mx-auto">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 text-white flex items-center justify-center flex-shrink-0 mt-1">
+                            <Loader2 size={16} className="animate-spin" />
+                        </div>
+                        <div className="flex items-center h-8">
+                            <span className="w-2 h-2 bg-gray-300 rounded-full animate-bounce mr-1"></span>
+                            <span className="w-2 h-2 bg-gray-300 rounded-full animate-bounce mr-1 delay-100"></span>
+                            <span className="w-2 h-2 bg-gray-300 rounded-full animate-bounce delay-200"></span>
+                        </div>
                     </div>
-                    <div className="flex items-center">
-                        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce mr-1"></span>
-                        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce mr-1 delay-100"></span>
-                        <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-200"></span>
-                    </div>
-                </div>
-            )}
-            <div ref={messagesEndRef} />
+                )}
+                <div ref={messagesEndRef} />
+            </div>
         </div>
 
-        {/* Input Area */}
-        <div className="p-4 bg-white dark:bg-gray-900">
+        {/* Floating Input Area */}
+        <div className="absolute bottom-0 left-0 w-full p-6 bg-gradient-to-t from-white via-white to-transparent dark:from-gray-900 dark:via-gray-900 pb-8 z-20">
             <div className="max-w-3xl mx-auto">
-                <div className="relative group bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-500 transition-all">
+                <div className="relative group bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-[2rem] shadow-lg focus-within:ring-2 focus-within:ring-indigo-100 dark:focus-within:ring-indigo-900 transition-all">
+
+                    {/* Left Icon (Plus) */}
+                    <button className="absolute left-4 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
+                        <Plus size={20} />
+                    </button>
+
                     <textarea
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
@@ -404,31 +423,26 @@ const Chat: React.FC = () => {
                                 handleSendMessage();
                             }
                         }}
-                        placeholder="Envie uma mensagem para o DRoweder IA..."
+                        placeholder="Pergunte alguma coisa..."
                         disabled={isSending}
                         rows={1}
-                        className="w-full pl-4 pr-12 py-3.5 bg-transparent resize-none focus:outline-none text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 disabled:opacity-50 max-h-32"
-                        style={{ minHeight: '52px' }}
+                        className="w-full pl-14 pr-12 py-4 bg-transparent resize-none focus:outline-none text-base text-gray-900 dark:text-gray-100 placeholder-gray-400 disabled:opacity-50 max-h-32"
+                        style={{ minHeight: '56px' }}
                     />
-                    <div className="absolute right-2 bottom-2 flex items-center gap-1">
+
+                    {/* Right Icon (Mic) */}
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
                         <button
                             onClick={toggleRecording}
-                            className={`p-2 rounded-lg transition-colors ${isRecording ? 'bg-red-500 text-white animate-pulse' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                            className={`p-2 rounded-full transition-colors ${isRecording ? 'bg-red-500 text-white animate-pulse' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
                             title={isRecording ? "Parar gravação" : "Gravar áudio"}
                         >
-                            {isRecording ? <MicOff size={18} /> : <Mic size={18} />}
-                        </button>
-                        <button
-                            onClick={handleSendMessage}
-                            disabled={!input.trim() || isSending}
-                            className={`p-2 rounded-lg transition-colors ${!input.trim() || isSending ? 'bg-gray-100 dark:bg-gray-700 text-gray-400' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}
-                        >
-                            <Send size={16} />
+                            {isRecording ? <MicOff size={20} /> : <Mic size={20} />}
                         </button>
                     </div>
                 </div>
-                <div className="text-center mt-2">
-                    <p className="text-[10px] text-gray-400 dark:text-gray-500">DRoweder IA pode cometer erros. Considere verificar informações importantes.</p>
+                <div className="text-center mt-3">
+                    <p className="text-[11px] text-gray-400 dark:text-gray-500">A IA pode cometer erros. Considere verificar informações importantes.</p>
                 </div>
             </div>
         </div>

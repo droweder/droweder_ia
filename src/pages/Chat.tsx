@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, ChevronDown, Bot, User, Database, ShieldCheck, Loader2, AlertCircle } from 'lucide-react';
+import { Send, ChevronDown, Bot, User, Database, Loader2, AlertCircle, Mic, MicOff } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
 import { useChat } from '../contexts/ChatContext';
@@ -23,6 +23,7 @@ const Chat: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [isSending, setIsSending] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
   const { user } = useAuth();
   const { companyId, error: contextError, addConversation } = useChat();
@@ -31,10 +32,10 @@ const Chat: React.FC = () => {
   // Hidden feature flag for SQL debug (can be enabled via query param or user role later)
   const SHOW_SQL_DEBUG = false;
 
-  const [selectedModel, setSelectedModel] = useState<string>('google/gemini-2.0-flash-lite-preview-02-05:free');
+  const [selectedModel, setSelectedModel] = useState<string>('google/gemini-2.0-flash-exp:free');
 
   const models = [
-    { id: 'google/gemini-2.0-flash-lite-preview-02-05:free', name: 'Gemini 2.0 Flash Lite (Free)' },
+    { id: 'google/gemini-2.0-flash-exp:free', name: 'Gemini 2.0 Flash Experimental (Free)' },
     { id: 'deepseek/deepseek-r1:free', name: 'DeepSeek R1 (Free)' },
     { id: 'meta-llama/llama-3-8b-instruct:free', name: 'Llama 3 8B (Free)' },
     { id: 'mistralai/mistral-7b-instruct:free', name: 'Mistral 7B (Free)' },
@@ -219,6 +220,63 @@ const Chat: React.FC = () => {
     }
   }
 
+  const recognitionRef = useRef<any>(null);
+
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+    };
+  }, []);
+
+  const toggleRecording = () => {
+    if (isRecording) {
+      setIsRecording(false);
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+    } else {
+      startRecording();
+    }
+  };
+
+  const startRecording = () => {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        alert("Seu navegador não suporta reconhecimento de voz.");
+        return;
+    }
+
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+
+    recognitionRef.current = recognition;
+
+    recognition.lang = 'pt-BR';
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    recognition.onstart = () => {
+        setIsRecording(true);
+    };
+
+    recognition.onresult = (event: any) => {
+        const transcript = event.results[0][0].transcript;
+        setInput(prev => prev + (prev ? ' ' : '') + transcript);
+    };
+
+    recognition.onerror = (event: any) => {
+        console.error("Speech recognition error", event.error);
+        setIsRecording(false);
+    };
+
+    recognition.onend = () => {
+        setIsRecording(false);
+    };
+
+    recognition.start();
+  };
+
   // Combine context error (company fetch) with local chat error
   const displayError = chatError || contextError;
 
@@ -244,20 +302,6 @@ const Chat: React.FC = () => {
                 </div>
             </div>
 
-            {/* Connection Badge */}
-            <div className="flex items-center gap-2 text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded-full">
-                {companyId ? (
-                    <>
-                        <ShieldCheck size={14} className="text-emerald-500" />
-                        <span className="hidden sm:inline">Planintex Conectado</span>
-                    </>
-                ) : (
-                    <>
-                         <AlertCircle size={14} className="text-red-500" />
-                         <span className="hidden sm:inline text-red-500">Desconectado</span>
-                    </>
-                )}
-            </div>
         </div>
 
         {/* Messages */}
@@ -361,13 +405,20 @@ const Chat: React.FC = () => {
                                 handleSendMessage();
                             }
                         }}
-                        placeholder="Envie uma mensagem para o Planintex..."
+                        placeholder="Envie uma mensagem para o DRoweder IA..."
                         disabled={isSending}
                         rows={1}
                         className="w-full pl-4 pr-12 py-3.5 bg-transparent resize-none focus:outline-none text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 disabled:opacity-50 max-h-32"
                         style={{ minHeight: '52px' }}
                     />
                     <div className="absolute right-2 bottom-2 flex items-center gap-1">
+                        <button
+                            onClick={toggleRecording}
+                            className={`p-2 rounded-lg transition-colors ${isRecording ? 'bg-red-500 text-white animate-pulse' : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                            title={isRecording ? "Parar gravação" : "Gravar áudio"}
+                        >
+                            {isRecording ? <MicOff size={18} /> : <Mic size={18} />}
+                        </button>
                         <button
                             onClick={handleSendMessage}
                             disabled={!input.trim() || isSending}

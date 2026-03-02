@@ -1,11 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Bot, User, ChevronDown, ShieldCheck, Loader2, Database, AlertCircle, Plus, Mic, ArrowUp, Copy, Check, RefreshCcw, X, File } from 'lucide-react';
+import { Bot, User, ChevronDown, ShieldCheck, Loader2, Database, AlertCircle, Plus, Mic, ArrowUp, Copy, Check, RefreshCcw, X, File as FileIcon } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
+import * as pdfjsLib from 'pdfjs-dist';
+import mammoth from 'mammoth';
+
+// Initialize pdfjs worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+
 import { chatWithOpenRouter } from '../lib/openRouterClient';
 import { useOutletContext } from 'react-router-dom';
 import type { LayoutContextType } from '../components/Layout';
@@ -214,11 +220,41 @@ const Chat: React.FC = () => {
 
     let conversationId = activeConversationId;
 
-    // Upload files if any
+    // Process files
     const fileUrls: string[] = [];
+    let extractedTextFromFiles = "";
+
     if (files.length > 0) {
         for (const file of files) {
-            const fileExt = file.name.split('.').pop();
+            const fileExt = file.name.split('.').pop()?.toLowerCase();
+
+            // Text extraction based on file type
+            try {
+                if (fileExt === 'txt' || fileExt === 'csv' || fileExt === 'json') {
+                    const text = await file.text();
+                    extractedTextFromFiles += `\n\n--- Conteúdo do arquivo: ${file.name} ---\n${text}\n--- Fim do arquivo ---\n`;
+                } else if (fileExt === 'pdf') {
+                    const arrayBuffer = await file.arrayBuffer();
+                    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                    let fullText = "";
+                    for (let i = 1; i <= pdf.numPages; i++) {
+                        const page = await pdf.getPage(i);
+                        const textContent = await page.getTextContent();
+                        const pageText = textContent.items.map((item: any) => item.str).join(" ");
+                        fullText += pageText + "\n";
+                    }
+                    extractedTextFromFiles += `\n\n--- Conteúdo do arquivo PDF: ${file.name} ---\n${fullText}\n--- Fim do arquivo ---\n`;
+                } else if (fileExt === 'docx') {
+                    const arrayBuffer = await file.arrayBuffer();
+                    const result = await mammoth.extractRawText({ arrayBuffer });
+                    extractedTextFromFiles += `\n\n--- Conteúdo do arquivo DOCX: ${file.name} ---\n${result.value}\n--- Fim do arquivo ---\n`;
+                }
+            } catch (err) {
+                console.error(`Error extracting text from ${file.name}:`, err);
+                // We'll still upload it, even if text extraction fails
+            }
+
+            // Upload the file to keep a record and provide a public URL
             const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
             const filePath = `${companyId}/${fileName}`;
 
@@ -243,6 +279,13 @@ const Chat: React.FC = () => {
 
     // Append file info to the user message for context
     let finalMessageContent = newMessageContent;
+
+    // Add text contents to the user prompt if any files were parsed
+    if (extractedTextFromFiles) {
+        finalMessageContent += extractedTextFromFiles;
+    }
+
+    // Add visual links
     if (fileUrls.length > 0) {
         const links = fileUrls.map(url => `[Arquivo anexado](${url})`).join('\n');
         finalMessageContent = finalMessageContent ? `${finalMessageContent}\n\n${links}` : links;
@@ -552,7 +595,7 @@ const Chat: React.FC = () => {
                                         <img src={URL.createObjectURL(file)} alt="preview" className="h-full w-full object-cover" />
                                     ) : (
                                         <div className="flex flex-col items-center justify-center text-slate-500 dark:text-gray-300">
-                                            <File size={24} />
+                                            <FileIcon size={24} />
                                             <span className="text-[10px] font-medium mt-1 truncate w-14 text-center px-1">{file.name.split('.').pop()?.toUpperCase()}</span>
                                         </div>
                                     )}

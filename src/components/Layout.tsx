@@ -4,6 +4,8 @@ import { MessageSquare, Sun, Moon, LogOut, ChevronDown, Plus, PanelLeft, Search,
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { supabase } from '../lib/supabaseClient';
+import { CreateProjectModal } from './CreateProjectModal';
+import { NoProjectsWarningModal } from './NoProjectsWarningModal';
 
 export interface LayoutContextType {
     conversations: any[];
@@ -24,31 +26,88 @@ const Layout: React.FC = () => {
   const [isRecentChatsOpen, setIsRecentChatsOpen] = useState(true);
   const [openChatMenuId, setOpenChatMenuId] = useState<string | null>(null);
 
+  // Project state
+  const [projects, setProjects] = useState<any[]>([]);
+  const [isCreateProjectModalOpen, setIsCreateProjectModalOpen] = useState(false);
+  const [isNoProjectsWarningOpen, setIsNoProjectsWarningOpen] = useState(false);
+
   const [conversations, setConversations] = useState<any[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
 
   const isActive = (path: string) => location.pathname === path;
 
   useEffect(() => {
-    const fetchConversations = async () => {
+    const fetchData = async () => {
       if (!user) return;
-      const { data, error } = await supabase
+
+      // Fetch conversations
+      const { data: convData, error: convError } = await supabase
           .schema('droweder_ia')
           .from('conversations')
           .select('*')
           .order('created_at', { ascending: false });
 
-      if (error) console.error('Error fetching conversations:', error);
-      if (data) {
-          setConversations(data);
-          if (data.length > 0 && !activeConversationId) {
-              setActiveConversationId(data[0].id);
+      if (convError) console.error('Error fetching conversations:', convError);
+      if (convData) {
+          setConversations(convData);
+          if (convData.length > 0 && !activeConversationId) {
+              setActiveConversationId(convData[0].id);
           }
+      }
+
+      // Fetch projects
+      const { data: projData, error: projError } = await supabase
+          .schema('droweder_ia')
+          .from('projects')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+      if (projError) {
+        console.log('Could not fetch projects, possibly table does not exist yet:', projError.message);
+      } else if (projData) {
+        setProjects(projData);
       }
     };
 
-    fetchConversations();
+    fetchData();
   }, [user]);
+
+  const handleCreateProject = async (name: string, category?: string) => {
+    if (!user) return;
+
+    try {
+        const newProject = {
+           user_id: user.id, // Or company_id depending on schema
+           name: name,
+           description: category || 'General Project',
+        };
+
+        const { data, error } = await supabase
+           .schema('droweder_ia')
+           .from('projects')
+           .insert([newProject])
+           .select();
+
+        if (error) {
+           console.warn("Failed to create project in DB:", error.message);
+           setProjects(prev => [{id: Date.now(), ...newProject}, ...prev]);
+        } else if (data) {
+           setProjects(prev => [...data, ...prev]);
+        }
+    } catch (e) {
+         console.error("Exception creating project", e);
+    }
+  };
+
+  const handleTransferToProjectClick = () => {
+      setOpenChatMenuId(null);
+      if (projects.length === 0) {
+          setIsNoProjectsWarningOpen(true);
+      } else {
+          // Future implementation: Select project modal
+          alert(`Selecione um projeto para transferir (Em breve). Chats disponíveis para projetos: ${projects.length}`);
+      }
+  };
 
   const handleNewChat = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -182,7 +241,9 @@ const Layout: React.FC = () => {
                  </button>
                  {isProjectsOpen && (
                      <div className="mt-1 space-y-1">
-                        <button className="w-full flex items-center gap-3 h-8 px-3 rounded-md transition-all duration-200 text-sm font-medium text-slate-600 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white">
+                        <button
+                           onClick={() => setIsCreateProjectModalOpen(true)}
+                           className="w-full flex items-center gap-3 h-8 px-3 rounded-md transition-all duration-200 text-sm font-medium text-slate-600 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white">
                             <FolderKanban size={20} />
                             <span>Novo Projeto</span>
                         </button>
@@ -226,8 +287,7 @@ const Layout: React.FC = () => {
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                alert('Em breve');
-                                                setOpenChatMenuId(null);
+                                                handleTransferToProjectClick();
                                             }}
                                             className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-white/10"
                                         >
@@ -299,6 +359,19 @@ const Layout: React.FC = () => {
           </div>
         </div>
       </aside>
+
+      {/* Modals */}
+      <CreateProjectModal
+          isOpen={isCreateProjectModalOpen}
+          onClose={() => setIsCreateProjectModalOpen(false)}
+          onCreate={handleCreateProject}
+      />
+
+      <NoProjectsWarningModal
+          isOpen={isNoProjectsWarningOpen}
+          onClose={() => setIsNoProjectsWarningOpen(false)}
+          onConfirm={() => setIsCreateProjectModalOpen(true)}
+      />
 
       {/* Main Content */}
       <main className="flex-1 overflow-hidden relative flex flex-col bg-transparent">

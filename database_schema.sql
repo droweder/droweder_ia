@@ -21,22 +21,21 @@ END $$;
 CREATE TABLE IF NOT EXISTS droweder_ia.projects (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     company_id UUID NOT NULL REFERENCES planintex.empresas(id),
-    user_id UUID NOT NULL, -- Referência ao usuário que criou
     name TEXT NOT NULL,
     description TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+    created_by UUID
 );
 
 -- Tabela de Conversas
 CREATE TABLE IF NOT EXISTS droweder_ia.conversations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL, -- Referência ao usuário que criou
+    user_id UUID NOT NULL,
     company_id UUID NOT NULL REFERENCES planintex.empresas(id),
-    project_id UUID REFERENCES droweder_ia.projects(id) ON DELETE SET NULL,
     title TEXT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    project_id UUID REFERENCES droweder_ia.projects(id) ON DELETE SET NULL
 );
 
 -- Tabela de Mensagens
@@ -55,24 +54,22 @@ CREATE TABLE IF NOT EXISTS droweder_ia.messages (
 CREATE TABLE IF NOT EXISTS droweder_ia.files (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     company_id UUID NOT NULL REFERENCES planintex.empresas(id),
-    user_id UUID NOT NULL,
     name TEXT NOT NULL,
-    url TEXT NOT NULL,
+    size BIGINT,
     type TEXT,
-    size INTEGER,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+    url TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    uploaded_by UUID
 );
 
 -- Tabela de Assistentes
 CREATE TABLE IF NOT EXISTS droweder_ia.assistants (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    company_id UUID NOT NULL REFERENCES planintex.empresas(id),
-    user_id UUID NOT NULL,
     name TEXT NOT NULL,
     description TEXT,
-    system_prompt TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+    icon TEXT,
+    category TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
 -- Tabela de Logs de Faturamento (Billing)
@@ -144,10 +141,9 @@ CREATE POLICY "Users can access their company files" ON droweder_ia.files
     USING (company_id IN (SELECT empresa_id FROM planintex.profiles WHERE id = auth.uid()))
     WITH CHECK (company_id IN (SELECT empresa_id FROM planintex.profiles WHERE id = auth.uid()));
 
-CREATE POLICY "Users can access their company assistants" ON droweder_ia.assistants
-    FOR ALL
-    USING (company_id IN (SELECT empresa_id FROM planintex.profiles WHERE id = auth.uid()))
-    WITH CHECK (company_id IN (SELECT empresa_id FROM planintex.profiles WHERE id = auth.uid()));
+CREATE POLICY "Users can access all assistants" ON droweder_ia.assistants
+    FOR SELECT
+    USING (true);
 
 -- Política para Conversations
 -- Usuários só podem acessar conversas da sua empresa

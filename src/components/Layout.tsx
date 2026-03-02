@@ -92,7 +92,7 @@ const Layout: React.FC = () => {
 
     try {
         const newProject = {
-           user_id: user.id,
+           created_by: user.id,
            company_id: companyId,
            name: name,
            description: category || 'General Project',

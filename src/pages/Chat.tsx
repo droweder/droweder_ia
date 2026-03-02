@@ -237,22 +237,22 @@ const Chat: React.FC = () => {
 
 
   return (
-    <div className="flex flex-1 flex-col h-full bg-gray-50 dark:bg-gray-900 overflow-hidden transition-colors duration-200">
+    <div className="flex flex-1 flex-col h-full bg-transparent overflow-hidden transition-colors duration-200">
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col min-w-0 bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
+      <div className="flex-1 flex flex-col min-w-0 bg-transparent transition-colors duration-200">
         {/* Header - Simplified */}
-        <div className="h-14 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center bg-white dark:bg-black px-4 shadow-sm z-10">
+        <div className="h-14 border-b border-white/10 flex justify-between items-center bg-white/5 backdrop-blur-md px-4 shadow-sm z-10">
             <div className="flex items-center gap-4">
                  {/* Model Selector */}
                 <div className="relative group">
                     <select
                         value={selectedModel}
                         onChange={(e) => setSelectedModel(e.target.value)}
-                        className="appearance-none bg-transparent font-medium text-gray-700 dark:text-gray-200 text-sm hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg py-1.5 pl-2 pr-8 focus:outline-none cursor-pointer transition-colors"
+                        className="appearance-none bg-transparent font-medium text-gray-200 text-sm hover:bg-white/10 rounded-lg py-1.5 pl-2 pr-8 focus:outline-none cursor-pointer transition-colors"
                     >
                         {models.map(model => (
-                            <option key={model.id} value={model.id}>{model.name}</option>
+                            <option key={model.id} value={model.id} className="bg-slate-800 text-gray-200">{model.name}</option>
                         ))}
                     </select>
                     <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
@@ -260,27 +260,27 @@ const Chat: React.FC = () => {
             </div>
 
             {/* Connection Badge */}
-            <div className="flex items-center gap-2 text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded-full">
-                <ShieldCheck size={14} className="text-emerald-500" />
+            <div className="flex items-center gap-2 text-xs font-medium text-gray-300 bg-white/10 px-3 py-1.5 rounded-full">
+                <ShieldCheck size={14} className="text-emerald-400" />
                 <span className="hidden sm:inline">Planintex Conectado</span>
             </div>
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 bg-gray-50 dark:bg-gray-900 scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-gray-700 hover:scrollbar-thumb-gray-300">
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 bg-transparent scrollbar-thin scrollbar-thumb-white/20 hover:scrollbar-thumb-white/30">
             {messages.length === 0 && !loading && (
-                <div className="flex flex-col items-center justify-center h-full text-gray-400 space-y-6">
-                    <div className="w-16 h-16 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-sm border border-gray-200 dark:border-gray-700">
-                        <Bot size={32} className="text-gray-900 dark:text-gray-100" />
+                <div className="flex flex-col items-center justify-center h-full text-gray-300 space-y-6">
+                    <div className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center shadow-sm border border-white/20">
+                        <Bot size={32} className="text-white" />
                     </div>
                     <div className="grid grid-cols-2 gap-4 max-w-lg w-full">
-                        <button onClick={() => setInput("Qual a previsão de demanda para o próximo mês?")} className="p-4 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 text-left transition-colors">
-                            <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">Previsão de Demanda</h3>
-                            <p className="text-xs text-gray-500">Analise tendências futuras</p>
+                        <button onClick={() => setInput("Qual a previsão de demanda para o próximo mês?")} className="p-4 border border-white/10 rounded-xl hover:bg-white/10 bg-white/5 backdrop-blur-sm text-left transition-colors">
+                            <h3 className="text-sm font-medium text-white mb-1">Previsão de Demanda</h3>
+                            <p className="text-xs text-gray-400">Analise tendências futuras</p>
                         </button>
-                         <button onClick={() => setInput("Quais ordens estão atrasadas?")} className="p-4 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 text-left transition-colors">
-                            <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">Ordens Atrasadas</h3>
-                            <p className="text-xs text-gray-500">Liste gargalos na produção</p>
+                         <button onClick={() => setInput("Quais ordens estão atrasadas?")} className="p-4 border border-white/10 rounded-xl hover:bg-white/10 bg-white/5 backdrop-blur-sm text-left transition-colors">
+                            <h3 className="text-sm font-medium text-white mb-1">Ordens Atrasadas</h3>
+                            <p className="text-xs text-gray-400">Liste gargalos na produção</p>
                         </button>
                     </div>
                 </div>
@@ -288,13 +288,13 @@ const Chat: React.FC = () => {
 
             {/* Error Banner */}
             {error && (
-                <div className="rounded-md bg-red-50 dark:bg-red-900/20 p-4 border border-red-200 dark:border-red-800 mx-auto max-w-2xl mt-4">
+                <div className="rounded-md bg-red-900/40 p-4 border border-red-500/30 mx-auto max-w-2xl mt-4 backdrop-blur-sm">
                     <div className="flex">
                         <div className="flex-shrink-0">
                             <AlertCircle className="h-5 w-5 text-red-400" aria-hidden="true" />
                         </div>
                         <div className="ml-3">
-                            <h3 className="text-sm font-medium text-red-800 dark:text-red-200">{error}</h3>
+                            <h3 className="text-sm font-medium text-red-200">{error}</h3>
                         </div>
                     </div>
                 </div>
@@ -302,15 +302,15 @@ const Chat: React.FC = () => {
 
             {messages.map((msg) => (
                 <div key={msg.id} className={`flex gap-4 max-w-3xl mx-auto w-full animate-in fade-in slide-in-from-bottom-2 duration-300 group`}>
-                    <div className={`w-8 h-8 rounded-sm flex items-center justify-center flex-shrink-0 ${msg.role === 'user' ? 'bg-gray-200 dark:bg-gray-700' : 'bg-purple-600 text-white'}`}>
-                        {msg.role === 'user' ? <User size={16} className="text-gray-600 dark:text-gray-300" /> : <Bot size={16} />}
+                    <div className={`w-8 h-8 rounded-sm flex items-center justify-center flex-shrink-0 ${msg.role === 'user' ? 'bg-white/10' : 'bg-purple-600/80 text-white'}`}>
+                        {msg.role === 'user' ? <User size={16} className="text-gray-300" /> : <Bot size={16} />}
                     </div>
 
                     <div className="flex-1 space-y-2 overflow-hidden">
-                        <div className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+                        <div className="text-sm font-semibold text-gray-200">
                             {msg.role === 'user' ? 'Você' : 'DRoweder IA'}
                         </div>
-                        <div className="prose prose-sm dark:prose-invert max-w-none text-gray-800 dark:text-gray-300 leading-relaxed whitespace-pre-wrap">
+                        <div className="prose prose-sm dark:prose-invert max-w-none text-gray-300 leading-relaxed whitespace-pre-wrap">
                             {msg.content}
                         </div>
 
@@ -319,13 +319,13 @@ const Chat: React.FC = () => {
                             <div className="mt-2">
                                 <button
                                     onClick={() => toggleSql(msg.id)}
-                                    className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                                    className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-300 transition-colors"
                                 >
                                     <Database size={12} />
                                     <span>{showSql === msg.id ? 'Ocultar SQL' : 'Debug SQL'}</span>
                                 </button>
                                 {showSql === msg.id && (
-                                    <div className="mt-2 p-3 bg-gray-100 dark:bg-gray-900 rounded-md border border-gray-200 dark:border-gray-800 font-mono text-xs overflow-x-auto text-gray-600 dark:text-gray-400">
+                                    <div className="mt-2 p-3 bg-white/5 rounded-md border border-white/10 font-mono text-xs overflow-x-auto text-gray-400 backdrop-blur-sm">
                                         SELECT * FROM planintex.ordens ...
                                     </div>
                                 )}
@@ -336,7 +336,7 @@ const Chat: React.FC = () => {
             ))}
              {loading && (
                 <div className="flex gap-4 max-w-3xl mx-auto w-full">
-                    <div className="w-8 h-8 rounded-sm bg-purple-600 text-white flex items-center justify-center flex-shrink-0">
+                    <div className="w-8 h-8 rounded-sm bg-purple-600/80 text-white flex items-center justify-center flex-shrink-0">
                         <Loader2 size={16} className="animate-spin" />
                     </div>
                     <div className="flex items-center">
@@ -350,10 +350,10 @@ const Chat: React.FC = () => {
         </div>
 
         {/* Input Area */}
-        <div className="p-4 bg-gray-50 dark:bg-gray-900">
+        <div className="p-4 bg-transparent border-t border-white/10 backdrop-blur-md bg-white/5">
             <div className="max-w-3xl mx-auto relative">
-                <div className="relative flex items-end group bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm focus-within:ring-2 focus-within:ring-[#7e639f]/20 focus-within:border-[#7e639f] transition-all overflow-hidden">
-                    <button className="p-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+                <div className="relative flex items-end group bg-white/10 border border-white/20 rounded-2xl shadow-sm focus-within:ring-2 focus-within:ring-[#7e639f]/50 focus-within:border-transparent transition-all overflow-hidden backdrop-blur-xl">
+                    <button className="p-3 text-gray-400 hover:text-gray-200 transition-colors">
                         <Paperclip size={20} />
                     </button>
                     <textarea
@@ -368,24 +368,24 @@ const Chat: React.FC = () => {
                         placeholder="Envie uma mensagem..."
                         disabled={loading}
                         rows={1}
-                        className="flex-1 py-3.5 bg-transparent resize-none focus:outline-none text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 disabled:opacity-50 max-h-32"
+                        className="flex-1 py-3.5 bg-transparent resize-none focus:outline-none text-sm text-gray-100 placeholder-gray-400 disabled:opacity-50 max-h-32"
                         style={{ minHeight: '52px' }}
                     />
                     <div className="p-2 flex items-center gap-1">
-                        <button className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+                        <button className="p-2 text-gray-400 hover:text-gray-200 transition-colors">
                              <Mic size={20} />
                         </button>
                         <button
                             onClick={handleSendMessage}
                             disabled={!input.trim() || loading}
-                            className={`p-2 rounded-xl transition-colors ${!input.trim() || loading ? 'bg-gray-100 dark:bg-gray-700 text-gray-400' : 'bg-[#7e639f] text-white hover:bg-[#6b528a]'}`}
+                            className={`p-2 rounded-xl transition-colors ${!input.trim() || loading ? 'bg-white/5 text-gray-500' : 'bg-[#7e639f] text-white hover:bg-[#6b528a] shadow-lg shadow-[#7e639f]/20'}`}
                         >
                             <Send size={18} />
                         </button>
                     </div>
                 </div>
                 <div className="text-center mt-3">
-                    <p className="text-xs text-gray-400 dark:text-gray-500">A inteligência artificial pode cometer erros. Verifique informações importantes.</p>
+                    <p className="text-xs text-gray-400">A inteligência artificial pode cometer erros. Verifique informações importantes.</p>
                 </div>
             </div>
         </div>

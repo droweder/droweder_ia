@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Send, ChevronDown, Bot, User, Database, ShieldCheck, Loader2, AlertCircle, Plus, MessageSquare } from 'lucide-react';
+import { Send, ChevronDown, Bot, User, Database, ShieldCheck, Loader2, AlertCircle, Paperclip, Mic } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
 import { chatWithOpenRouterViaEdge } from '../lib/openRouterEdge';
@@ -237,53 +237,12 @@ const Chat: React.FC = () => {
 
 
   return (
-    <div className="flex h-full bg-white dark:bg-gray-900 overflow-hidden transition-colors duration-200">
-
-      {/* Sidebar - History (Refined Style) */}
-      <div className="w-64 border-r border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-black flex flex-col hidden md:flex transition-colors duration-200">
-         {/* Sidebar header removed as requested to be like ChatGPT (buttons moved to Layout or kept clean) */}
-         {/* Assuming Layout handles the global nav, this sidebar might be redundant or specific to chat history.
-             If we want ChatGPT style, the global sidebar in Layout is actually the history sidebar.
-             For now, I will keep a simple list of conversations here if it's meant to be a secondary panel,
-             OR if we assume the Layout sidebar IS the main nav.
-
-             Let's sync with Layout: Layout has the apps. Chat history is specific to Chat.
-             ChatGPT has one sidebar for history.
-             Current architecture: Global Layout Sidebar + Local Page Content.
-             I will keep the "History" list here as a "Recent Chats" panel.
-          */}
-        <div className="p-3">
-             <button
-                onClick={() => setActiveConversationId(null)}
-                className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-md text-sm font-medium transition-colors"
-             >
-                <Plus size={16} />
-                Nova Conversa
-             </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto px-2 space-y-1">
-            <div className="px-2 py-2 text-xs font-semibold text-gray-500 uppercase">Hoje</div>
-            {conversations.map(conv => (
-                <button
-                    key={conv.id}
-                    onClick={() => setActiveConversationId(conv.id)}
-                    className={`w-full text-left px-3 py-2.5 rounded-md text-sm flex items-center gap-3 transition-colors truncate group ${activeConversationId === conv.id ? 'bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-gray-100' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-900'}`}
-                >
-                    <MessageSquare size={16} className="text-gray-400 group-hover:text-gray-500" />
-                    <span className="truncate flex-1">{conv.title}</span>
-                </button>
-            ))}
-            {conversations.length === 0 && (
-                <div className="text-center p-4 text-xs text-gray-400">Nenhuma conversa recente.</div>
-            )}
-        </div>
-      </div>
+    <div className="flex flex-1 flex-col h-full bg-gray-50 dark:bg-gray-900 overflow-hidden transition-colors duration-200">
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col min-w-0 bg-white dark:bg-gray-900 transition-colors duration-200">
+      <div className="flex-1 flex flex-col min-w-0 bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
         {/* Header - Simplified */}
-        <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center bg-white dark:bg-gray-900 shadow-sm z-10">
+        <div className="h-14 border-b border-gray-200 dark:border-gray-800 flex justify-between items-center bg-white dark:bg-black px-4 shadow-sm z-10">
             <div className="flex items-center gap-4">
                  {/* Model Selector */}
                 <div className="relative group">
@@ -308,10 +267,10 @@ const Chat: React.FC = () => {
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 bg-white dark:bg-gray-900 scrollbar-thin">
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 bg-gray-50 dark:bg-gray-900 scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-gray-700 hover:scrollbar-thumb-gray-300">
             {messages.length === 0 && !loading && (
                 <div className="flex flex-col items-center justify-center h-full text-gray-400 space-y-6">
-                    <div className="w-16 h-16 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-sm border border-gray-100 dark:border-gray-700">
+                    <div className="w-16 h-16 bg-white dark:bg-gray-800 rounded-full flex items-center justify-center shadow-sm border border-gray-200 dark:border-gray-700">
                         <Bot size={32} className="text-gray-900 dark:text-gray-100" />
                     </div>
                     <div className="grid grid-cols-2 gap-4 max-w-lg w-full">
@@ -391,9 +350,12 @@ const Chat: React.FC = () => {
         </div>
 
         {/* Input Area */}
-        <div className="p-4 bg-white dark:bg-gray-900">
-            <div className="max-w-3xl mx-auto">
-                <div className="relative group bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm focus-within:ring-2 focus-within:ring-purple-500/20 focus-within:border-purple-500 transition-all">
+        <div className="p-4 bg-gray-50 dark:bg-gray-900">
+            <div className="max-w-3xl mx-auto relative">
+                <div className="relative flex items-end group bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-sm focus-within:ring-2 focus-within:ring-[#7e639f]/20 focus-within:border-[#7e639f] transition-all overflow-hidden">
+                    <button className="p-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+                        <Paperclip size={20} />
+                    </button>
                     <textarea
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
@@ -403,24 +365,27 @@ const Chat: React.FC = () => {
                                 handleSendMessage();
                             }
                         }}
-                        placeholder="Envie uma mensagem para o Planintex..."
+                        placeholder="Envie uma mensagem..."
                         disabled={loading}
                         rows={1}
-                        className="w-full pl-4 pr-12 py-3.5 bg-transparent resize-none focus:outline-none text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 disabled:opacity-50 max-h-32"
+                        className="flex-1 py-3.5 bg-transparent resize-none focus:outline-none text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 disabled:opacity-50 max-h-32"
                         style={{ minHeight: '52px' }}
                     />
-                    <div className="absolute right-2 bottom-2 flex items-center gap-1">
+                    <div className="p-2 flex items-center gap-1">
+                        <button className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
+                             <Mic size={20} />
+                        </button>
                         <button
                             onClick={handleSendMessage}
                             disabled={!input.trim() || loading}
-                            className={`p-2 rounded-lg transition-colors ${!input.trim() || loading ? 'bg-gray-100 dark:bg-gray-700 text-gray-400' : 'bg-purple-600 text-white hover:bg-purple-700'}`}
+                            className={`p-2 rounded-xl transition-colors ${!input.trim() || loading ? 'bg-gray-100 dark:bg-gray-700 text-gray-400' : 'bg-[#7e639f] text-white hover:bg-[#6b528a]'}`}
                         >
-                            <Send size={16} />
+                            <Send size={18} />
                         </button>
                     </div>
                 </div>
-                <div className="text-center mt-2">
-                    <p className="text-[10px] text-gray-400 dark:text-gray-500">DRoweder IA pode cometer erros. Considere verificar informações importantes.</p>
+                <div className="text-center mt-3">
+                    <p className="text-xs text-gray-400 dark:text-gray-500">A inteligência artificial pode cometer erros. Verifique informações importantes.</p>
                 </div>
             </div>
         </div>

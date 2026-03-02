@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Bot, User, ChevronDown, ShieldCheck, Loader2, Database, AlertCircle, Plus, Mic, ArrowUp } from 'lucide-react';
 import { supabase } from '../lib/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
-import { chatWithOpenRouterViaEdge } from '../lib/openRouterEdge';
+import { chatWithOpenRouter } from '../lib/openRouterClient';
 import { useOutletContext } from 'react-router-dom';
 import type { LayoutContextType } from '../components/Layout';
 import type { OpenRouterMessage } from '../types';
@@ -172,7 +172,7 @@ const Chat: React.FC = () => {
     ];
 
     try {
-        const aiResponse = await chatWithOpenRouterViaEdge(selectedModel, openRouterMessages);
+        const aiResponse = await chatWithOpenRouter(selectedModel, openRouterMessages);
 
         const aiContent = aiResponse?.choices[0]?.message?.content || "Desculpe, não consegui processar sua solicitação no momento.";
         const modelUsed = aiResponse?.model || selectedModel;

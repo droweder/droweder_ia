@@ -22,6 +22,7 @@ const Layout: React.FC = () => {
   const [isAssistantsOpen, setIsAssistantsOpen] = useState(true);
   const [isProjectsOpen, setIsProjectsOpen] = useState(true);
   const [isRecentChatsOpen, setIsRecentChatsOpen] = useState(true);
+  const [openChatMenuId, setOpenChatMenuId] = useState<string | null>(null);
 
   const [conversations, setConversations] = useState<any[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
@@ -55,6 +56,28 @@ const Layout: React.FC = () => {
     navigate('/chat');
   };
 
+  const handleDeleteChat = async (id: string) => {
+    if (!window.confirm("Tem certeza que deseja excluir este chat?")) return;
+
+    // Optimistically update UI
+    setConversations(prev => prev.filter(c => c.id !== id));
+    if (activeConversationId === id) {
+        setActiveConversationId(null);
+        navigate('/chat');
+    }
+
+    const { error } = await supabase
+        .schema('droweder_ia')
+        .from('conversations')
+        .delete()
+        .eq('id', id);
+
+    if (error) {
+        console.error('Error deleting chat:', error);
+        // Optionally refetch conversations here if delete fails to restore state
+    }
+  };
+
   // Derive display name from user metadata or email
   const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Usuário';
   const companyName = user?.user_metadata?.company_name || 'Minha Empresa'; // In a real app, fetch from relation
@@ -68,7 +91,7 @@ const Layout: React.FC = () => {
         <div className="h-12 flex items-center justify-between px-4 border-b border-slate-200 dark:border-white/10">
              {!isSidebarCollapsed && (
                 <div className="flex items-center">
-                    <img src="https://phofwpyxbeulodrzfdjq.supabase.co/storage/v1/object/public/imagens_app/logo_droweder_IA.png" alt="DRoweder IA" className="h-8 object-contain" />
+                    <img src="https://phofwpyxbeulodrzfdjq.supabase.co/storage/v1/object/public/imagens_app/logo_droweder_IA.png" alt="DRoweder IA" className="h-6 object-contain" />
                 </div>
              )}
              {isSidebarCollapsed && (
@@ -179,18 +202,49 @@ const Layout: React.FC = () => {
                  {isRecentChatsOpen && (
                      <div className="mt-1 space-y-1">
                         {conversations.map(chat => (
-                            <div
-                                key={chat.id}
-                                onClick={() => {
-                                    setActiveConversationId(chat.id);
-                                    if (!isActive('/chat')) navigate('/chat');
-                                }}
-                                className={`group relative flex items-center justify-between h-8 px-3 rounded-md cursor-pointer transition-colors ${activeConversationId === chat.id ? 'bg-slate-200 dark:bg-white/10 text-slate-900 dark:text-white' : 'hover:bg-slate-100 dark:hover:bg-white/10 text-slate-600 dark:text-gray-300 hover:text-slate-900 dark:hover:text-white'}`}
-                            >
-                                <span className="text-sm truncate pr-6">{chat.title}</span>
-                                <button className="absolute right-2 opacity-0 group-hover:opacity-100 p-1 hover:bg-slate-300 dark:hover:bg-white/20 rounded text-slate-500 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white transition-all">
-                                    <MoreVertical size={14} />
-                                </button>
+                            <div key={chat.id} className="relative">
+                                <div
+                                    onClick={() => {
+                                        setActiveConversationId(chat.id);
+                                        if (!isActive('/chat')) navigate('/chat');
+                                    }}
+                                    className={`group relative flex items-center justify-between h-8 px-3 rounded-md cursor-pointer transition-colors ${activeConversationId === chat.id ? 'bg-slate-200 dark:bg-white/10 text-slate-900 dark:text-white' : 'hover:bg-slate-100 dark:hover:bg-white/10 text-slate-600 dark:text-gray-300 hover:text-slate-900 dark:hover:text-white'}`}
+                                >
+                                    <span className="text-sm truncate pr-6">{chat.title}</span>
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setOpenChatMenuId(openChatMenuId === chat.id ? null : chat.id);
+                                        }}
+                                        className="absolute right-2 opacity-0 group-hover:opacity-100 p-1 hover:bg-slate-300 dark:hover:bg-white/20 rounded text-slate-500 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white transition-all"
+                                    >
+                                        <MoreVertical size={14} />
+                                    </button>
+                                </div>
+                                {openChatMenuId === chat.id && (
+                                    <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-slate-800 border border-slate-200 dark:border-white/10 rounded-lg shadow-lg py-1 z-50">
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                alert('Em breve');
+                                                setOpenChatMenuId(null);
+                                            }}
+                                            className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-white/10"
+                                        >
+                                            Transferir para Projeto
+                                        </button>
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleDeleteChat(chat.id);
+                                                setOpenChatMenuId(null);
+                                            }}
+                                            className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-slate-100 dark:hover:bg-white/10"
+                                        >
+                                            Excluir Chat
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         ))}
                      </div>

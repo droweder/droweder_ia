@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Bot, User, ChevronDown, ShieldCheck, Loader2, Database, AlertCircle, Plus, Mic, ArrowUp, Copy, Check, RefreshCcw } from 'lucide-react';
+import { Bot, User, ChevronDown, ShieldCheck, Loader2, Database, AlertCircle, Plus, Mic, ArrowUp, Copy, Check, RefreshCcw, X, File } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -109,8 +109,21 @@ const Chat: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [attachments, setAttachments] = useState<File[]>([]);
   const { user } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const newFiles = Array.from(e.target.files);
+      setAttachments((prev) => [...prev, ...newFiles]);
+    }
+  };
+
+  const removeAttachment = (index: number) => {
+    setAttachments((prev) => prev.filter((_, i) => i !== index));
+  };
 
   // Hidden feature flag for SQL debug (can be enabled via query param or user role later)
   const SHOW_SQL_DEBUG = false;
@@ -182,14 +195,16 @@ const Chat: React.FC = () => {
   };
 
   const handleSendMessage = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() && attachments.length === 0) return;
     const content = input;
     setInput('');
-    await handleSendCustomMessage(content, messages);
+    const currentAttachments = [...attachments];
+    setAttachments([]); // clear attachments right away
+    await handleSendCustomMessage(content, messages, currentAttachments);
   };
 
-  const handleSendCustomMessage = async (newMessageContent: string, currentHistory: Message[]) => {
-    if (!newMessageContent.trim() || !user || !companyId) {
+  const handleSendCustomMessage = async (newMessageContent: string, currentHistory: Message[], files: File[] = []) => {
+    if ((!newMessageContent.trim() && files.length === 0) || !user || !companyId) {
         if (!companyId) setError("Empresa não identificada. Contate o suporte.");
         return;
     }
@@ -199,6 +214,40 @@ const Chat: React.FC = () => {
 
     let conversationId = activeConversationId;
 
+    // Upload files if any
+    const fileUrls: string[] = [];
+    if (files.length > 0) {
+        for (const file of files) {
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+            const filePath = `${companyId}/${fileName}`;
+
+            const { error: uploadError } = await supabase.storage
+                .from('company_files')
+                .upload(filePath, file);
+
+            if (uploadError) {
+                console.error("Error uploading file:", uploadError);
+                setError(`Erro ao fazer upload do arquivo ${file.name}`);
+                setLoading(false);
+                return;
+            }
+
+            const { data } = supabase.storage
+                .from('company_files')
+                .getPublicUrl(filePath);
+
+            fileUrls.push(data.publicUrl);
+        }
+    }
+
+    // Append file info to the user message for context
+    let finalMessageContent = newMessageContent;
+    if (fileUrls.length > 0) {
+        const links = fileUrls.map(url => `[Arquivo anexado](${url})`).join('\n');
+        finalMessageContent = finalMessageContent ? `${finalMessageContent}\n\n${links}` : links;
+    }
+
     // Create conversation if none exists
     if (!conversationId) {
         const { data: newConv, error: convError } = await supabase
@@ -207,7 +256,7 @@ const Chat: React.FC = () => {
             .insert({
                 user_id: user.id,
                 company_id: companyId,
-                title: newMessageContent.substring(0, 30) + '...',
+                title: finalMessageContent.substring(0, 30) + '...',
             })
             .select()
             .single();
@@ -230,7 +279,7 @@ const Chat: React.FC = () => {
         .insert({
             conversation_id: conversationId,
             role: 'user',
-            content: newMessageContent
+            content: finalMessageContent
         });
 
     if (msgError) {
@@ -240,7 +289,7 @@ const Chat: React.FC = () => {
     }
 
     // Optimistic update
-    const userMessage: Message = { id: 'temp-' + Date.now(), role: 'user', content: newMessageContent };
+    const userMessage: Message = { id: 'temp-' + Date.now(), role: 'user', content: finalMessageContent };
     // Only append to the currentHistory we passed in, avoiding race conditions if we trimmed history
     setMessages([...currentHistory, userMessage]);
 
@@ -259,7 +308,7 @@ const Chat: React.FC = () => {
         5. Seja conciso, profissional e use Português do Brasil.
         ` },
         ...currentHistory.map(m => ({ role: m.role, content: m.content }) as OpenRouterMessage),
-        { role: 'user', content: newMessageContent }
+        { role: 'user', content: finalMessageContent }
     ];
 
     try {
@@ -493,12 +542,47 @@ const Chat: React.FC = () => {
         {/* Input Area */}
         <div className="p-4 bg-transparent backdrop-blur-md">
             <div className="max-w-3xl mx-auto relative">
-                <div className="relative flex items-end group bg-[#f4f4f4] dark:bg-[#2f2f2f] rounded-[26px] transition-all overflow-hidden focus-within:ring-2 focus-within:ring-gray-300 dark:focus-within:ring-gray-600">
-                    <div className="flex items-center justify-center p-2 pl-3 pb-[10px]">
-                        <button className="w-8 h-8 rounded-full flex items-center justify-center text-slate-500 hover:text-slate-800 dark:text-gray-400 dark:hover:text-gray-200 transition-colors border border-transparent hover:bg-black/5 dark:hover:bg-white/10">
-                            <Plus size={20} strokeWidth={2.5} />
-                        </button>
-                    </div>
+                <div className="relative flex flex-col group bg-[#f4f4f4] dark:bg-[#2f2f2f] rounded-[26px] transition-all overflow-hidden focus-within:ring-2 focus-within:ring-gray-300 dark:focus-within:ring-gray-600">
+                    {/* Attachments Preview */}
+                    {attachments.length > 0 && (
+                        <div className="flex flex-wrap gap-2 p-3 pb-0">
+                            {attachments.map((file, index) => (
+                                <div key={index} className="relative group/attachment flex items-center justify-center bg-white dark:bg-slate-700 rounded-xl border border-slate-200 dark:border-white/10 shadow-sm overflow-hidden h-16 w-16">
+                                    {file.type.startsWith('image/') ? (
+                                        <img src={URL.createObjectURL(file)} alt="preview" className="h-full w-full object-cover" />
+                                    ) : (
+                                        <div className="flex flex-col items-center justify-center text-slate-500 dark:text-gray-300">
+                                            <File size={24} />
+                                            <span className="text-[10px] font-medium mt-1 truncate w-14 text-center px-1">{file.name.split('.').pop()?.toUpperCase()}</span>
+                                        </div>
+                                    )}
+                                    <button
+                                        onClick={() => removeAttachment(index)}
+                                        className="absolute -top-1 -right-1 bg-white dark:bg-slate-800 text-slate-600 dark:text-gray-200 rounded-full p-0.5 opacity-0 group-hover/attachment:opacity-100 transition-opacity border border-slate-200 dark:border-white/10 shadow-sm hover:bg-slate-100 dark:hover:bg-slate-700"
+                                    >
+                                        <X size={12} />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    <div className="relative flex items-end">
+                        <div className="flex items-center justify-center p-2 pl-3 pb-[10px]">
+                            <button
+                                onClick={() => fileInputRef.current?.click()}
+                                className="w-8 h-8 rounded-full flex items-center justify-center text-slate-500 hover:text-slate-800 dark:text-gray-400 dark:hover:text-gray-200 transition-colors border border-transparent hover:bg-black/5 dark:hover:bg-white/10"
+                            >
+                                <Plus size={20} strokeWidth={2.5} />
+                            </button>
+                            <input
+                                type="file"
+                                ref={fileInputRef}
+                                onChange={handleFileChange}
+                                multiple
+                                className="hidden"
+                            />
+                        </div>
                     <textarea
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
@@ -529,16 +613,16 @@ const Chat: React.FC = () => {
                         </button>
                         <button
                             onClick={handleSendMessage}
-                            disabled={!input.trim() && !loading}
+                            disabled={(!input.trim() && attachments.length === 0) || loading}
                             className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors
-                                ${!input.trim()
+                                ${(!input.trim() && attachments.length === 0)
                                     ? 'bg-black text-white dark:bg-white dark:text-black opacity-100 hover:opacity-80'
                                     : 'bg-black text-white dark:bg-white dark:text-black hover:opacity-80'
                                 }
                                 ${loading ? 'opacity-50 cursor-not-allowed' : ''}
                             `}
                         >
-                            {!input.trim() ? (
+                            {(!input.trim() && attachments.length === 0) ? (
                                 // Simulate Audio Wave icon
                                 <div className="flex items-center justify-center gap-[2px]">
                                     <div className="w-[2px] h-2.5 bg-current rounded-full"></div>
@@ -550,6 +634,7 @@ const Chat: React.FC = () => {
                             )}
                         </button>
                     </div>
+                </div>
                 </div>
                 <div className="text-center mt-3">
                     <p className="text-xs text-slate-500 dark:text-gray-400">O ChatGPT pode cometer erros. Confira informações importantes. Consulte as <a href="#" className="underline">Preferências de cookies</a>.</p>

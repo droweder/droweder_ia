@@ -1,3 +1,38 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  body {
+    @apply antialiased transition-colors duration-300;
+
+    /* Light Mode (Default/Fallback) - Soft, clean light theme */
+    background: radial-gradient(
+      circle at 50% 50%,
+      #f8fafc 0%,
+      #e2e8f0 100%
+    );
+    background-color: #f8fafc;
+    background-image: none;
+    background-attachment: fixed;
+    color: #1e293b;
+  }
+
+  /* Dark Mode Aurora */
+  .dark body {
+    /* Aurora Gradient Background */
+    background: radial-gradient(
+      circle at 50% 50%,
+      rgba(15, 23, 42, 1) 0%, /* Dark Slate/Navy Center */
+      rgba(10, 15, 28, 1) 100%
+    );
+    background-color: #0f172a;
+    background-image:
+      radial-gradient(at 10% 20%, hsla(220,100%,40%,0.15) 0px, transparent 50%),
+      radial-gradient(at 90% 80%, hsla(350,100%,40%,0.15) 0px, transparent 50%),
+      radial-gradient(at 50% 90%, hsla(40,100%,40%,0.15) 0px, transparent 50%),
+      radial-gradient(at 80% 10%, hsla(280,100%,40%,0.15) 0px, transparent 50%);
+    background-attachment: fixed;
+    color: white;
+  }
+}

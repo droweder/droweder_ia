@@ -131,22 +131,26 @@ ALTER TABLE droweder_ia.files ENABLE ROW LEVEL SECURITY;
 ALTER TABLE droweder_ia.assistants ENABLE ROW LEVEL SECURITY;
 
 -- Políticas para Projetos, Arquivos e Assistentes (Acesso por Empresa)
+DROP POLICY IF EXISTS "Users can access their company projects" ON droweder_ia.projects;
 CREATE POLICY "Users can access their company projects" ON droweder_ia.projects
     FOR ALL
     USING (company_id IN (SELECT empresa_id FROM planintex.profiles WHERE id = auth.uid()))
     WITH CHECK (company_id IN (SELECT empresa_id FROM planintex.profiles WHERE id = auth.uid()));
 
+DROP POLICY IF EXISTS "Users can access their company files" ON droweder_ia.files;
 CREATE POLICY "Users can access their company files" ON droweder_ia.files
     FOR ALL
     USING (company_id IN (SELECT empresa_id FROM planintex.profiles WHERE id = auth.uid()))
     WITH CHECK (company_id IN (SELECT empresa_id FROM planintex.profiles WHERE id = auth.uid()));
 
+DROP POLICY IF EXISTS "Users can access all assistants" ON droweder_ia.assistants;
 CREATE POLICY "Users can access all assistants" ON droweder_ia.assistants
     FOR SELECT
     USING (true);
 
 -- Política para Conversations
 -- Usuários só podem acessar conversas da sua empresa
+DROP POLICY IF EXISTS "Users can access their company conversations" ON droweder_ia.conversations;
 CREATE POLICY "Users can access their company conversations" ON droweder_ia.conversations
     FOR ALL
     USING (
@@ -162,6 +166,7 @@ CREATE POLICY "Users can access their company conversations" ON droweder_ia.conv
 
 -- Política para Messages
 -- Usuários só podem acessar mensagens de conversas da sua empresa
+DROP POLICY IF EXISTS "Users can access messages of their company conversations" ON droweder_ia.messages;
 CREATE POLICY "Users can access messages of their company conversations" ON droweder_ia.messages
     FOR ALL
     USING (
@@ -183,6 +188,7 @@ CREATE POLICY "Users can access messages of their company conversations" ON drow
 
 -- Política para Billing Logs
 -- Usuários só podem ver logs da sua empresa (Read Only recomendado para usuários comuns, Insert pelo sistema)
+DROP POLICY IF EXISTS "Users can view their company billing logs" ON droweder_ia.billing_logs;
 CREATE POLICY "Users can view their company billing logs" ON droweder_ia.billing_logs
     FOR SELECT
     USING (

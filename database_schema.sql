@@ -33,11 +33,32 @@ CREATE TABLE IF NOT EXISTS planintex.ordens (
 
 -- 3. Tabelas do Schema DRoweder AI
 
+-- Adicionando coluna project_id na tabela conversations caso ela já exista
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema='droweder_ia' AND table_name='conversations' AND column_name='project_id') THEN
+        ALTER TABLE droweder_ia.conversations ADD COLUMN project_id UUID REFERENCES droweder_ia.projects(id) ON DELETE SET NULL;
+    END IF;
+END $$;
+
+-- Tabela de Projetos
+CREATE TABLE IF NOT EXISTS droweder_ia.projects (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    company_id UUID NOT NULL REFERENCES planintex.empresas(id),
+    user_id UUID NOT NULL, -- Referência ao usuário que criou
+    name TEXT NOT NULL,
+    description TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
 -- Tabela de Conversas
 CREATE TABLE IF NOT EXISTS droweder_ia.conversations (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL, -- Referência ao usuário que criou
     company_id UUID NOT NULL REFERENCES planintex.empresas(id),
+    project_id UUID REFERENCES droweder_ia.projects(id) ON DELETE SET NULL,
     title TEXT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
@@ -52,6 +73,31 @@ CREATE TABLE IF NOT EXISTS droweder_ia.messages (
     tokens_used INTEGER DEFAULT 0,
     model_used TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+
+-- Tabela de Arquivos
+CREATE TABLE IF NOT EXISTS droweder_ia.files (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    company_id UUID NOT NULL REFERENCES planintex.empresas(id),
+    user_id UUID NOT NULL,
+    name TEXT NOT NULL,
+    url TEXT NOT NULL,
+    type TEXT,
+    size INTEGER,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- Tabela de Assistentes
+CREATE TABLE IF NOT EXISTS droweder_ia.assistants (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    company_id UUID NOT NULL REFERENCES planintex.empresas(id),
+    user_id UUID NOT NULL,
+    name TEXT NOT NULL,
+    description TEXT,
+    system_prompt TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
 -- Tabela de Logs de Faturamento (Billing)
@@ -108,6 +154,25 @@ GRANT SELECT ON ALL TABLES IN SCHEMA planintex TO authenticated;
 ALTER TABLE droweder_ia.conversations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE droweder_ia.messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE droweder_ia.billing_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE droweder_ia.projects ENABLE ROW LEVEL SECURITY;
+ALTER TABLE droweder_ia.files ENABLE ROW LEVEL SECURITY;
+ALTER TABLE droweder_ia.assistants ENABLE ROW LEVEL SECURITY;
+
+-- Políticas para Projetos, Arquivos e Assistentes (Acesso por Empresa)
+CREATE POLICY "Users can access their company projects" ON droweder_ia.projects
+    FOR ALL
+    USING (company_id IN (SELECT company_id FROM planintex.users WHERE id = auth.uid()))
+    WITH CHECK (company_id IN (SELECT company_id FROM planintex.users WHERE id = auth.uid()));
+
+CREATE POLICY "Users can access their company files" ON droweder_ia.files
+    FOR ALL
+    USING (company_id IN (SELECT company_id FROM planintex.users WHERE id = auth.uid()))
+    WITH CHECK (company_id IN (SELECT company_id FROM planintex.users WHERE id = auth.uid()));
+
+CREATE POLICY "Users can access their company assistants" ON droweder_ia.assistants
+    FOR ALL
+    USING (company_id IN (SELECT company_id FROM planintex.users WHERE id = auth.uid()))
+    WITH CHECK (company_id IN (SELECT company_id FROM planintex.users WHERE id = auth.uid()));
 
 -- Política para Conversations
 -- Usuários só podem acessar conversas da sua empresa

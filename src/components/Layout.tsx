@@ -6,6 +6,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { supabase } from '../lib/supabaseClient';
 import { CreateProjectModal } from './CreateProjectModal';
 import { NoProjectsWarningModal } from './NoProjectsWarningModal';
+import { SelectProjectModal } from './SelectProjectModal';
 
 export interface LayoutContextType {
     conversations: any[];
@@ -30,15 +31,29 @@ const Layout: React.FC = () => {
   const [projects, setProjects] = useState<any[]>([]);
   const [isCreateProjectModalOpen, setIsCreateProjectModalOpen] = useState(false);
   const [isNoProjectsWarningOpen, setIsNoProjectsWarningOpen] = useState(false);
+  const [isSelectProjectModalOpen, setIsSelectProjectModalOpen] = useState(false);
+  const [chatToTransferId, setChatToTransferId] = useState<string | null>(null);
 
   const [conversations, setConversations] = useState<any[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
+  const [companyId, setCompanyId] = useState<string | null>(null);
 
   const isActive = (path: string) => location.pathname === path;
 
   useEffect(() => {
     const fetchData = async () => {
       if (!user) return;
+
+      const { data: userRecord, error: userError } = await supabase
+        .schema('planintex')
+        .from('users')
+        .select('company_id')
+        .eq('id', user.id)
+        .single();
+
+      if (userRecord && !userError) {
+        setCompanyId(userRecord.company_id);
+      }
 
       // Fetch conversations
       const { data: convData, error: convError } = await supabase
@@ -73,11 +88,12 @@ const Layout: React.FC = () => {
   }, [user]);
 
   const handleCreateProject = async (name: string, category?: string) => {
-    if (!user) return;
+    if (!user || !companyId) return;
 
     try {
         const newProject = {
-           user_id: user.id, // Or company_id depending on schema
+           user_id: user.id,
+           company_id: companyId,
            name: name,
            description: category || 'General Project',
         };
@@ -99,14 +115,39 @@ const Layout: React.FC = () => {
     }
   };
 
-  const handleTransferToProjectClick = () => {
+  const handleTransferToProjectClick = (chatId: string) => {
       setOpenChatMenuId(null);
       if (projects.length === 0) {
           setIsNoProjectsWarningOpen(true);
       } else {
-          // Future implementation: Select project modal
-          alert(`Selecione um projeto para transferir (Em breve). Chats disponíveis para projetos: ${projects.length}`);
+          setChatToTransferId(chatId);
+          setIsSelectProjectModalOpen(true);
       }
+  };
+
+  const executeTransferChat = async (projectId: string) => {
+      if (!chatToTransferId) return;
+
+      const { error } = await supabase
+          .schema('droweder_ia')
+          .from('conversations')
+          .update({ project_id: projectId })
+          .eq('id', chatToTransferId);
+
+      if (error) {
+          console.error('Error transferring chat:', error);
+          alert('Erro ao transferir chat para o projeto.');
+      } else {
+          // Remover da lista geral, pois o chat foi movido para o projeto
+          setConversations(prev => prev.filter(c => c.id !== chatToTransferId));
+          if (activeConversationId === chatToTransferId) {
+              setActiveConversationId(null);
+              navigate('/chat');
+          }
+      }
+
+      setIsSelectProjectModalOpen(false);
+      setChatToTransferId(null);
   };
 
   const handleNewChat = (e: React.MouseEvent) => {
@@ -287,7 +328,7 @@ const Layout: React.FC = () => {
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
-                                                handleTransferToProjectClick();
+                                                handleTransferToProjectClick(chat.id);
                                             }}
                                             className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-white/10"
                                         >
@@ -371,6 +412,16 @@ const Layout: React.FC = () => {
           isOpen={isNoProjectsWarningOpen}
           onClose={() => setIsNoProjectsWarningOpen(false)}
           onConfirm={() => setIsCreateProjectModalOpen(true)}
+      />
+
+      <SelectProjectModal
+        isOpen={isSelectProjectModalOpen}
+        onClose={() => {
+            setIsSelectProjectModalOpen(false);
+            setChatToTransferId(null);
+        }}
+        projects={projects}
+        onSelectProject={executeTransferChat}
       />
 
       {/* Main Content */}

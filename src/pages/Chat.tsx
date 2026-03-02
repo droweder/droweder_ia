@@ -203,16 +203,20 @@ const Chat: React.FC = () => {
   const handleSendMessage = async () => {
     if (!input.trim() && attachments.length === 0) return;
     const content = input;
-    setInput('');
     const currentAttachments = [...attachments];
-    setAttachments([]); // clear attachments right away
-    await handleSendCustomMessage(content, messages, currentAttachments);
+
+    // Do not clear input and attachments yet; they will be cleared upon successful sending
+    const success = await handleSendCustomMessage(content, messages, currentAttachments);
+    if (success) {
+        setInput('');
+        setAttachments([]);
+    }
   };
 
   const handleSendCustomMessage = async (newMessageContent: string, currentHistory: Message[], files: File[] = []) => {
     if ((!newMessageContent.trim() && files.length === 0) || !user || !companyId) {
         if (!companyId) setError("Empresa não identificada. Contate o suporte.");
-        return;
+        return false;
     }
 
     setLoading(true);
@@ -266,7 +270,7 @@ const Chat: React.FC = () => {
                 console.error("Error uploading file:", uploadError);
                 setError(`Erro ao fazer upload do arquivo ${file.name}`);
                 setLoading(false);
-                return;
+                return false;
             }
 
             const { data } = supabase.storage
@@ -308,7 +312,7 @@ const Chat: React.FC = () => {
             console.error('Error creating conversation:', convError);
             setError("Erro ao iniciar conversa.");
             setLoading(false);
-            return;
+            return false;
         }
         conversationId = newConv.id;
         setActiveConversationId(newConv.id);
@@ -328,7 +332,7 @@ const Chat: React.FC = () => {
     if (msgError) {
         console.error('Error saving message:', msgError);
         setLoading(false);
-        return;
+        return false;
     }
 
     // Optimistic update
@@ -384,9 +388,13 @@ const Chat: React.FC = () => {
     } catch (error) {
         console.error("LLM Error:", error);
         setMessages(prev => [...prev, { id: 'err-' + Date.now(), role: 'assistant', content: "Erro de conexão com a IA. Tente novamente." }]);
+        setLoading(false);
+        return false;
     } finally {
         setLoading(false);
     }
+
+    return true;
   };
 
   const toggleSql = (msgId: string) => {

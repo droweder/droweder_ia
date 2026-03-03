@@ -23,6 +23,9 @@ export interface LayoutContextType {
     setConversations: React.Dispatch<React.SetStateAction<any[]>>;
     activeConversationId: string | null;
     setActiveConversationId: React.Dispatch<React.SetStateAction<string | null>>;
+    activeAssistantId: string | null;
+    setActiveAssistantId: React.Dispatch<React.SetStateAction<string | null>>;
+    assistants: any[];
 }
 
 const Layout: React.FC = () => {
@@ -89,9 +92,9 @@ const Layout: React.FC = () => {
     }
   };
 
-  const handleCreateAssistant = async (name: string, description?: string) => {
+  const handleCreateAssistant = async (name: string, description?: string, instructions?: string) => {
     try {
-      const { data, error } = await supabase.schema('droweder_ia').from('assistants').insert([{ name, description }]).select();
+      const { data, error } = await supabase.schema('droweder_ia').from('assistants').insert([{ name, description, instructions }]).select();
       if (error) {
         console.error('Error creating assistant:', error);
         setToastMessage('Erro ao criar assistente: ' + error.message);
@@ -125,6 +128,7 @@ const Layout: React.FC = () => {
 
   const [conversations, setConversations] = useState<any[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
+  const [activeAssistantId, setActiveAssistantId] = useState<string | null>(null);
   const [companyId, setCompanyId] = useState<string | null>(null);
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -250,6 +254,7 @@ const Layout: React.FC = () => {
   const handleNewChat = (e: React.MouseEvent) => {
     e.preventDefault();
     setActiveConversationId(null);
+    setActiveAssistantId(null);
     navigate('/chat');
   };
 
@@ -380,7 +385,12 @@ const Layout: React.FC = () => {
                         {assistants.map((assistant) => (
                            <button
                               key={assistant.id}
-                              className="w-full flex items-center gap-3 h-8 px-3 rounded-md transition-all duration-200 text-sm font-medium text-slate-600 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white"
+                              onClick={() => {
+                                setActiveConversationId(null);
+                                setActiveAssistantId(assistant.id);
+                                if (!isActive('/chat')) navigate('/chat');
+                              }}
+                              className={`w-full flex items-center gap-3 h-8 px-3 rounded-md transition-all duration-200 text-sm font-medium text-slate-600 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white ${activeAssistantId === assistant.id && !activeConversationId ? 'bg-slate-200 dark:bg-white/10 text-slate-900 dark:text-white' : ''}`}
                            >
                               <div className="w-5 h-5 bg-[#7e639f] rounded-sm flex items-center justify-center text-white flex-shrink-0">
                                  <Bot size={12} />
@@ -654,8 +664,8 @@ const Layout: React.FC = () => {
       <CreateAssistantModal
         isOpen={isCreateAssistantModalOpen}
         onClose={() => setIsCreateAssistantModalOpen(false)}
-        onCreate={(name, description) => {
-          void handleCreateAssistant(name, description);
+        onCreate={(name, description, instructions) => {
+          void handleCreateAssistant(name, description, instructions);
         }}
       />
 
@@ -739,6 +749,11 @@ const Layout: React.FC = () => {
           isOpen={isExploreAssistantsModalOpen}
           onClose={() => setIsExploreAssistantsModalOpen(false)}
           assistants={assistants}
+          onSelectAssistant={(assistantId) => {
+              setActiveConversationId(null);
+              setActiveAssistantId(assistantId);
+              if (!isActive('/chat')) navigate('/chat');
+          }}
       />
 
       {toastMessage && (
@@ -751,7 +766,7 @@ const Layout: React.FC = () => {
 
       {/* Main Content */}
       <main className="flex-1 overflow-hidden relative flex flex-col bg-transparent">
-        <Outlet context={{ conversations, setConversations, activeConversationId, setActiveConversationId } satisfies LayoutContextType} />
+        <Outlet context={{ conversations, setConversations, activeConversationId, setActiveConversationId, activeAssistantId, setActiveAssistantId, assistants } satisfies LayoutContextType} />
       </main>
     </div>
   );

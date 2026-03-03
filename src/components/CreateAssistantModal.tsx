@@ -4,18 +4,22 @@ import { Settings, X, Lightbulb, Bot, Briefcase, Code, GraduationCap, PenTool } 
 interface CreateAssistantModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreate: (name: string, description?: string) => void;
+  onCreate: (name: string, description?: string, instructions?: string) => void;
 }
 
 export function CreateAssistantModal({ isOpen, onClose, onCreate }: CreateAssistantModalProps) {
   const [assistantName, setAssistantName] = useState('');
+  const [assistantDescription, setAssistantDescription] = useState('');
+  const [assistantInstructions, setAssistantInstructions] = useState('');
 
   if (!isOpen) return null;
 
   const handleCreate = () => {
     if (assistantName.trim()) {
-      onCreate(assistantName.trim());
+      onCreate(assistantName.trim(), assistantDescription.trim(), assistantInstructions.trim());
       setAssistantName('');
+      setAssistantDescription('');
+      setAssistantInstructions('');
       onClose();
     }
   };
@@ -44,22 +48,46 @@ export function CreateAssistantModal({ isOpen, onClose, onCreate }: CreateAssist
         {/* Body */}
         <div className="px-6 pb-6 flex flex-col gap-6">
 
-          {/* Input */}
-          <div className="relative group">
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 dark:text-gray-400 group-focus-within:text-slate-800 dark:group-focus-within:text-white transition-colors">
-              <Bot size={20} className="rounded-full border-2 border-current p-[2px]" />
+          {/* Inputs */}
+          <div className="space-y-4">
+            <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Nome do Assistente <span className="text-red-500">*</span></label>
+                <div className="relative group">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 dark:text-gray-400 group-focus-within:text-slate-800 dark:group-focus-within:text-white transition-colors">
+                    <Bot size={20} className="rounded-full border-2 border-current p-[2px]" />
+                    </div>
+                    <input
+                    type="text"
+                    value={assistantName}
+                    onChange={(e) => setAssistantName(e.target.value)}
+                    placeholder="Ex: Analista de Dados"
+                    className="w-full bg-white/40 dark:bg-white/5 backdrop-blur-sm border border-slate-200 dark:border-white/10 rounded-xl py-3 pl-12 pr-4 text-slate-800 dark:text-white placeholder-slate-500 dark:placeholder-gray-500 focus:outline-none focus:border-slate-300 dark:focus:border-gray-400 transition-colors shadow-sm"
+                    autoFocus
+                    />
+                </div>
             </div>
-            <input
-              type="text"
-              value={assistantName}
-              onChange={(e) => setAssistantName(e.target.value)}
-              placeholder="Analista de Dados"
-              className="w-full bg-white/40 dark:bg-white/5 backdrop-blur-sm border border-slate-200 dark:border-white/10 rounded-xl py-3 pl-12 pr-4 text-slate-800 dark:text-white placeholder-slate-500 dark:placeholder-gray-500 focus:outline-none focus:border-slate-300 dark:focus:border-gray-400 transition-colors shadow-sm"
-              autoFocus
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleCreate();
-              }}
-            />
+
+            <div>
+                 <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Descrição</label>
+                 <input
+                    type="text"
+                    value={assistantDescription}
+                    onChange={(e) => setAssistantDescription(e.target.value)}
+                    placeholder="Ex: Especialista em analisar relatórios de vendas"
+                    className="w-full bg-white/40 dark:bg-white/5 backdrop-blur-sm border border-slate-200 dark:border-white/10 rounded-xl py-2 px-4 text-slate-800 dark:text-white placeholder-slate-500 dark:placeholder-gray-500 focus:outline-none focus:border-slate-300 dark:focus:border-gray-400 transition-colors shadow-sm text-sm"
+                 />
+            </div>
+
+            <div>
+                 <label className="block text-sm font-medium text-slate-700 dark:text-gray-300 mb-1">Instruções Personalizadas</label>
+                 <textarea
+                    value={assistantInstructions}
+                    onChange={(e) => setAssistantInstructions(e.target.value)}
+                    placeholder="O que este assistente deve saber e como deve se comportar? Ex: Aja como um analista de dados. Sempre responda em formato de tópicos e forneça resumos estatísticos."
+                    rows={4}
+                    className="w-full bg-white/40 dark:bg-white/5 backdrop-blur-sm border border-slate-200 dark:border-white/10 rounded-xl py-2 px-4 text-slate-800 dark:text-white placeholder-slate-500 dark:placeholder-gray-500 focus:outline-none focus:border-slate-300 dark:focus:border-gray-400 transition-colors shadow-sm text-sm resize-none scrollbar-thin"
+                 />
+            </div>
           </div>
 
           {/* Suggestions */}

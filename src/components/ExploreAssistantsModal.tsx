@@ -5,9 +5,10 @@ interface ExploreAssistantsModalProps {
   isOpen: boolean;
   onClose: () => void;
   assistants: any[];
+  onSelectAssistant: (assistantId: string) => void;
 }
 
-export function ExploreAssistantsModal({ isOpen, onClose, assistants }: ExploreAssistantsModalProps) {
+export function ExploreAssistantsModal({ isOpen, onClose, assistants, onSelectAssistant }: ExploreAssistantsModalProps) {
   const [query, setQuery] = useState('');
 
   if (!isOpen) return null;
@@ -74,8 +75,11 @@ export function ExploreAssistantsModal({ isOpen, onClose, assistants }: ExploreA
                             {assistant.description || 'Sem descrição fornecida.'}
                         </p>
                         <button
-                            className="w-full py-2 px-4 rounded-lg bg-slate-100 dark:bg-white/10 text-slate-800 dark:text-white font-medium text-sm hover:bg-slate-200 dark:hover:bg-white/20 transition-colors"
-                            onClick={onClose}
+                            className="w-full py-2 px-4 rounded-lg bg-[#7e639f]/10 dark:bg-[#7e639f]/20 text-[#7e639f] dark:text-[#a881d8] font-medium text-sm hover:bg-[#7e639f] hover:text-white dark:hover:bg-[#7e639f] dark:hover:text-white transition-colors"
+                            onClick={() => {
+                                onSelectAssistant(assistant.id);
+                                onClose();
+                            }}
                         >
                             Usar Assistente
                         </button>

@@ -7,6 +7,9 @@ import { supabase } from '../lib/supabaseClient';
 import { CreateProjectModal } from './CreateProjectModal';
 import { NoProjectsWarningModal } from './NoProjectsWarningModal';
 import { SelectProjectModal } from './SelectProjectModal';
+import { RenameChatModal } from './RenameChatModal';
+import { ShareChatModal } from './ShareChatModal';
+import { GroupChatModal } from './GroupChatModal';
 import { Toast } from './Toast';
 import type { ToastType } from './Toast';
 
@@ -35,6 +38,16 @@ const Layout: React.FC = () => {
   const [isNoProjectsWarningOpen, setIsNoProjectsWarningOpen] = useState(false);
   const [isSelectProjectModalOpen, setIsSelectProjectModalOpen] = useState(false);
   const [chatToTransferId, setChatToTransferId] = useState<string | null>(null);
+
+  const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
+  const [chatToRenameId, setChatToRenameId] = useState<string | null>(null);
+  const [chatToRenameCurrentName, setChatToRenameCurrentName] = useState('');
+
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [chatToShareId, setChatToShareId] = useState<string | null>(null);
+  const [chatToShareTitle, setChatToShareTitle] = useState('');
+
+  const [isGroupChatModalOpen, setIsGroupChatModalOpen] = useState(false);
 
   const [conversations, setConversations] = useState<any[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
@@ -349,7 +362,9 @@ const Layout: React.FC = () => {
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 setOpenChatMenuId(null);
-                                                showToast("Funcionalidade de compartilhar em desenvolvimento.", "info");
+                                                setChatToShareId(chat.id);
+                                                setChatToShareTitle(chat.title || 'Chat');
+                                                setIsShareModalOpen(true);
                                             }}
                                             className="w-full flex items-center gap-3 px-4 py-2 text-sm text-slate-700 dark:text-gray-200 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
                                         >
@@ -360,7 +375,7 @@ const Layout: React.FC = () => {
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 setOpenChatMenuId(null);
-                                                showToast("Funcionalidade de chat em grupo em desenvolvimento.", "info");
+                                                setIsGroupChatModalOpen(true);
                                             }}
                                             className="w-full flex items-center gap-3 px-4 py-2 text-sm text-slate-700 dark:text-gray-200 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
                                         >
@@ -371,13 +386,9 @@ const Layout: React.FC = () => {
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 setOpenChatMenuId(null);
-                                                const newTitle = prompt("Digite o novo nome para o chat:", chat.title || 'Novo Chat');
-                                                if (newTitle) {
-                                                    // Simple optimistic UI update for rename
-                                                    setConversations(prev => prev.map(c => c.id === chat.id ? { ...c, title: newTitle } : c));
-                                                    // Supabase update would go here
-                                                    supabase.schema('droweder_ia').from('conversations').update({ title: newTitle }).eq('id', chat.id).then();
-                                                }
+                                                setChatToRenameId(chat.id);
+                                                setChatToRenameCurrentName(chat.title || 'Novo Chat');
+                                                setIsRenameModalOpen(true);
                                             }}
                                             className="w-full flex items-center gap-3 px-4 py-2 text-sm text-slate-700 dark:text-gray-200 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
                                         >
@@ -401,21 +412,49 @@ const Layout: React.FC = () => {
                                         <div className="h-px bg-slate-200 dark:bg-white/10 my-1 mx-4"></div>
 
                                         <button
-                                            onClick={(e) => {
+                                            onClick={async (e) => {
                                                 e.stopPropagation();
                                                 setOpenChatMenuId(null);
-                                                showToast("Funcionalidade de fixar chat em desenvolvimento.", "info");
+
+                                                // Toggle pin status (requires boolean column 'is_pinned' on 'conversations')
+                                                const newPinnedStatus = !chat.is_pinned;
+                                                setConversations(prev => prev.map(c => c.id === chat.id ? { ...c, is_pinned: newPinnedStatus } : c));
+
+                                                const { error } = await supabase.schema('droweder_ia').from('conversations').update({ is_pinned: newPinnedStatus }).eq('id', chat.id);
+
+                                                if (error) {
+                                                    // Rollback
+                                                    setConversations(prev => prev.map(c => c.id === chat.id ? { ...c, is_pinned: !newPinnedStatus } : c));
+                                                    showToast("Erro ao fixar o chat.", "error");
+                                                } else {
+                                                    showToast(newPinnedStatus ? "Chat fixado com sucesso." : "Chat desfixado com sucesso.", "success");
+                                                }
                                             }}
                                             className="w-full flex items-center gap-3 px-4 py-2 text-sm text-slate-700 dark:text-gray-200 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
                                         >
-                                            <Pin size={16} />
-                                            Fixar chat
+                                            <Pin size={16} className={chat.is_pinned ? "text-[#7e639f]" : ""} />
+                                            {chat.is_pinned ? 'Desfixar chat' : 'Fixar chat'}
                                         </button>
                                         <button
-                                            onClick={(e) => {
+                                            onClick={async (e) => {
                                                 e.stopPropagation();
                                                 setOpenChatMenuId(null);
-                                                showToast("Funcionalidade de arquivar chat em desenvolvimento.", "info");
+
+                                                // Archive chat
+                                                setConversations(prev => prev.filter(c => c.id !== chat.id));
+                                                const { error } = await supabase.schema('droweder_ia').from('conversations').update({ is_archived: true }).eq('id', chat.id);
+
+                                                if (error) {
+                                                    // Rollback
+                                                    setConversations(prev => [...prev, chat]);
+                                                    showToast("Erro ao arquivar o chat.", "error");
+                                                } else {
+                                                    showToast("Chat arquivado.", "info");
+                                                    if (activeConversationId === chat.id) {
+                                                        setActiveConversationId(null);
+                                                        navigate('/');
+                                                    }
+                                                }
                                             }}
                                             className="w-full flex items-center gap-3 px-4 py-2 text-sm text-slate-700 dark:text-gray-200 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
                                         >
@@ -511,6 +550,46 @@ const Layout: React.FC = () => {
         }}
         projects={projects}
         onSelectProject={executeTransferChat}
+      />
+
+      <RenameChatModal
+        isOpen={isRenameModalOpen}
+        onClose={() => {
+            setIsRenameModalOpen(false);
+            setChatToRenameId(null);
+        }}
+        currentName={chatToRenameCurrentName}
+        onRename={async (newName: string) => {
+            if (!chatToRenameId) return;
+            // Optimistic update
+            setConversations(prev => prev.map(c => c.id === chatToRenameId ? { ...c, title: newName } : c));
+            const { error } = await supabase.schema('droweder_ia').from('conversations').update({ title: newName }).eq('id', chatToRenameId);
+            if (error) {
+                console.error("Error renaming chat:", error);
+                showToast("Erro ao renomear o chat.", "error");
+            } else {
+                showToast("Chat renomeado com sucesso.", "success");
+            }
+        }}
+      />
+
+      <ShareChatModal
+        isOpen={isShareModalOpen}
+        onClose={() => {
+            setIsShareModalOpen(false);
+            setChatToShareId(null);
+        }}
+        chatId={chatToShareId}
+        chatTitle={chatToShareTitle}
+      />
+
+      <GroupChatModal
+        isOpen={isGroupChatModalOpen}
+        onClose={() => setIsGroupChatModalOpen(false)}
+        onConfirm={() => {
+            setIsGroupChatModalOpen(false);
+            showToast("Chat em grupo criado com sucesso.", "success");
+        }}
       />
 
       {toastMessage && (

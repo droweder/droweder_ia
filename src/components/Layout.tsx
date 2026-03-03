@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { createPortal } from 'react-dom';
 import { MessageSquare, Sun, Moon, LogOut, ChevronDown, Plus, PanelLeft, Search, FileText, Bot, FolderKanban, MoreVertical, Layers, Share, UserPlus, Pencil, Folder, Pin, Archive, Trash2, ChevronRight } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -35,6 +36,30 @@ const Layout: React.FC = () => {
   const [isProjectsOpen, setIsProjectsOpen] = useState(true);
   const [isRecentChatsOpen, setIsRecentChatsOpen] = useState(true);
   const [openChatMenuId, setOpenChatMenuId] = useState<string | null>(null);
+  const [chatMenuPosition, setChatMenuPosition] = useState({ top: 0, left: 0 });
+  const chatMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleGlobalClick = (e: MouseEvent) => {
+      // Close user menu
+      // Close chat menu if clicking outside
+      if (openChatMenuId && chatMenuRef.current && !chatMenuRef.current.contains(e.target as Node)) {
+        setOpenChatMenuId(null);
+      }
+    };
+    document.addEventListener('click', handleGlobalClick);
+    return () => document.removeEventListener('click', handleGlobalClick);
+  }, [openChatMenuId]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+        if (openChatMenuId) {
+            setOpenChatMenuId(null);
+        }
+    };
+    window.addEventListener('scroll', handleScroll, true);
+    return () => window.removeEventListener('scroll', handleScroll, true);
+  }, [openChatMenuId]);
 
   // Project state
   const [projects, setProjects] = useState<any[]>([]);
@@ -419,15 +444,33 @@ const Layout: React.FC = () => {
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            setOpenChatMenuId(openChatMenuId === chat.id ? null : chat.id);
+                                            if (openChatMenuId === chat.id) {
+                                                setOpenChatMenuId(null);
+                                            } else {
+                                                const rect = e.currentTarget.getBoundingClientRect();
+                                                setChatMenuPosition({
+                                                    top: rect.bottom,
+                                                    left: rect.right
+                                                });
+                                                setOpenChatMenuId(chat.id);
+                                            }
                                         }}
                                         className="absolute right-2 opacity-0 group-hover:opacity-100 p-1 hover:bg-slate-300 dark:hover:bg-white/20 rounded text-slate-500 dark:text-gray-400 hover:text-slate-900 dark:hover:text-white transition-all"
                                     >
                                         <MoreVertical size={14} />
                                     </button>
                                 </div>
-                                {openChatMenuId === chat.id && (
-                                    <div className="absolute right-0 top-full mt-1 w-60 bg-white dark:bg-[#2b2d31] border border-slate-200 dark:border-white/10 rounded-xl shadow-xl py-2 z-50">
+                                {openChatMenuId === chat.id && createPortal(
+                                    <div
+                                        ref={chatMenuRef}
+                                        style={{
+                                            position: 'fixed',
+                                            top: `${chatMenuPosition.top + 4}px`,
+                                            left: `${Math.min(chatMenuPosition.left - 240, window.innerWidth - 250)}px`,
+                                            zIndex: 9999
+                                        }}
+                                        className="w-60 bg-white dark:bg-[#2b2d31] border border-slate-200 dark:border-white/10 rounded-xl shadow-xl py-2"
+                                    >
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();
@@ -543,7 +586,8 @@ const Layout: React.FC = () => {
                                             <Trash2 size={16} />
                                             Excluir
                                         </button>
-                                    </div>
+                                    </div>,
+                                    document.body
                                 )}
                             </div>
                         ))}

@@ -134,10 +134,10 @@ const Chat: React.FC = () => {
   // Hidden feature flag for SQL debug (can be enabled via query param or user role later)
   const SHOW_SQL_DEBUG = false;
 
-  const [selectedModel, setSelectedModel] = useState<string>('google/gemini-2.0-flash-lite-preview-02-05:free');
+  const [selectedModel, setSelectedModel] = useState<string>('google/gemini-2.0-flash-lite-001');
 
   const models = [
-    { id: 'google/gemini-2.0-flash-lite-preview-02-05:free', name: 'Gemini 2.0 Flash Lite (Free)' },
+    { id: 'google/gemini-2.0-flash-lite-001', name: 'Gemini 2.0 Flash Lite' },
     { id: 'deepseek/deepseek-r1:free', name: 'DeepSeek R1 (Free)' },
     { id: 'meta-llama/llama-3-8b-instruct:free', name: 'Llama 3 8B (Free)' },
     { id: 'mistralai/mistral-7b-instruct:free', name: 'Mistral 7B (Free)' },
@@ -361,6 +361,13 @@ const Chat: React.FC = () => {
     try {
         const aiResponse = await chatWithOpenRouter(selectedModel, openRouterMessages);
 
+        // Check for mock error response from openRouterClient when API key is missing
+        if (aiResponse?.id === 'mock-id') {
+            setError(aiResponse.choices[0].message.content);
+            setLoading(false);
+            return false;
+        }
+
         const aiContent = aiResponse?.choices[0]?.message?.content || "Desculpe, não consegui processar sua solicitação no momento.";
         const modelUsed = aiResponse?.model || selectedModel;
 
@@ -382,12 +389,12 @@ const Chat: React.FC = () => {
         } else if (aiError) {
              console.error('Error saving AI message:', aiError);
              // Show error in UI as fallback
-             setMessages(prev => [...prev, { id: 'err-' + Date.now(), role: 'assistant', content: "Erro ao salvar resposta no histórico." }]);
+             setError("Erro ao salvar resposta no histórico.");
         }
 
-    } catch (error) {
+    } catch (error: any) {
         console.error("LLM Error:", error);
-        setMessages(prev => [...prev, { id: 'err-' + Date.now(), role: 'assistant', content: "Erro de conexão com a IA. Tente novamente." }]);
+        setError(`Falha na API da IA: ${error.message || 'Erro de conexão com o servidor'}. Verifique o modelo ou tente novamente.`);
         setLoading(false);
         return false;
     } finally {

@@ -7,6 +7,8 @@ import { supabase } from '../lib/supabaseClient';
 import { CreateProjectModal } from './CreateProjectModal';
 import { NoProjectsWarningModal } from './NoProjectsWarningModal';
 import { SelectProjectModal } from './SelectProjectModal';
+import { Toast } from './Toast';
+import type { ToastType } from './Toast';
 
 export interface LayoutContextType {
     conversations: any[];
@@ -37,6 +39,14 @@ const Layout: React.FC = () => {
   const [conversations, setConversations] = useState<any[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [companyId, setCompanyId] = useState<string | null>(null);
+
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toastType, setToastType] = useState<ToastType>('info');
+
+  const showToast = (message: string, type: ToastType = 'info') => {
+      setToastMessage(message);
+      setToastType(type);
+  };
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -136,7 +146,7 @@ const Layout: React.FC = () => {
 
       if (error) {
           console.error('Error transferring chat:', error);
-          alert('Erro ao transferir chat para o projeto.');
+          showToast('Erro ao transferir chat para o projeto.', 'error');
       } else {
           // Remover da lista geral, pois o chat foi movido para o projeto
           setConversations(prev => prev.filter(c => c.id !== chatToTransferId));
@@ -339,7 +349,7 @@ const Layout: React.FC = () => {
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 setOpenChatMenuId(null);
-                                                alert("Funcionalidade de compartilhar em desenvolvimento.");
+                                                showToast("Funcionalidade de compartilhar em desenvolvimento.", "info");
                                             }}
                                             className="w-full flex items-center gap-3 px-4 py-2 text-sm text-slate-700 dark:text-gray-200 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
                                         >
@@ -350,7 +360,7 @@ const Layout: React.FC = () => {
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 setOpenChatMenuId(null);
-                                                alert("Funcionalidade de chat em grupo em desenvolvimento.");
+                                                showToast("Funcionalidade de chat em grupo em desenvolvimento.", "info");
                                             }}
                                             className="w-full flex items-center gap-3 px-4 py-2 text-sm text-slate-700 dark:text-gray-200 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
                                         >
@@ -394,7 +404,7 @@ const Layout: React.FC = () => {
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 setOpenChatMenuId(null);
-                                                alert("Funcionalidade de fixar chat em desenvolvimento.");
+                                                showToast("Funcionalidade de fixar chat em desenvolvimento.", "info");
                                             }}
                                             className="w-full flex items-center gap-3 px-4 py-2 text-sm text-slate-700 dark:text-gray-200 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
                                         >
@@ -405,7 +415,7 @@ const Layout: React.FC = () => {
                                             onClick={(e) => {
                                                 e.stopPropagation();
                                                 setOpenChatMenuId(null);
-                                                alert("Funcionalidade de arquivar chat em desenvolvimento.");
+                                                showToast("Funcionalidade de arquivar chat em desenvolvimento.", "info");
                                             }}
                                             className="w-full flex items-center gap-3 px-4 py-2 text-sm text-slate-700 dark:text-gray-200 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
                                         >
@@ -502,6 +512,14 @@ const Layout: React.FC = () => {
         projects={projects}
         onSelectProject={executeTransferChat}
       />
+
+      {toastMessage && (
+        <Toast
+          message={toastMessage}
+          type={toastType}
+          onClose={() => setToastMessage(null)}
+        />
+      )}
 
       {/* Main Content */}
       <main className="flex-1 overflow-hidden relative flex flex-col bg-transparent">

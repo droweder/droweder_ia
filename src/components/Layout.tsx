@@ -427,7 +427,7 @@ const Layout: React.FC = () => {
                                     </button>
                                 </div>
                                 {openChatMenuId === chat.id && (
-                                    <div className="absolute left-8 top-full mt-1 w-60 bg-white dark:bg-[#2b2d31] border border-slate-200 dark:border-white/10 rounded-xl shadow-xl py-2 z-50">
+                                    <div className="absolute right-0 top-full mt-1 w-60 bg-white dark:bg-[#2b2d31] border border-slate-200 dark:border-white/10 rounded-xl shadow-xl py-2 z-50">
                                         <button
                                             onClick={(e) => {
                                                 e.stopPropagation();

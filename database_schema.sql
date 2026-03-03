@@ -148,6 +148,11 @@ CREATE POLICY "Users can access all assistants" ON droweder_ia.assistants
     FOR SELECT
     USING (true);
 
+DROP POLICY IF EXISTS "Users can create assistants" ON droweder_ia.assistants;
+CREATE POLICY "Users can create assistants" ON droweder_ia.assistants
+    FOR INSERT
+    WITH CHECK (true);
+
 -- Política para Conversations
 -- Usuários só podem acessar conversas da sua empresa
 DROP POLICY IF EXISTS "Users can access their company conversations" ON droweder_ia.conversations;

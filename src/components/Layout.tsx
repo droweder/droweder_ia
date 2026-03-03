@@ -11,6 +11,8 @@ import { SelectProjectModal } from './SelectProjectModal';
 import { RenameChatModal } from './RenameChatModal';
 import { ShareChatModal } from './ShareChatModal';
 import { GroupChatModal } from './GroupChatModal';
+import { SearchModal } from './SearchModal';
+import { ExploreAssistantsModal } from './ExploreAssistantsModal';
 import { DeleteChatModal } from './DeleteChatModal';
 import { Toast } from './Toast';
 import type { ToastType } from './Toast';
@@ -41,9 +43,47 @@ const Layout: React.FC = () => {
   const [isSelectProjectModalOpen, setIsSelectProjectModalOpen] = useState(false);
   const [chatToTransferId, setChatToTransferId] = useState<string | null>(null);
 
+  // Search Modal
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+
   // Assistant state
   const [assistants, setAssistants] = useState<any[]>([]);
   const [isCreateAssistantModalOpen, setIsCreateAssistantModalOpen] = useState(false);
+  const [isExploreAssistantsModalOpen, setIsExploreAssistantsModalOpen] = useState(false);
+
+  const loadAssistants = async () => {
+    try {
+      const { data, error } = await supabase.schema('droweder_ia').from('assistants').select('*').order('created_at', { ascending: false });
+      if (error) {
+        console.error('Error loading assistants:', error);
+      } else {
+        setAssistants(data || []);
+      }
+    } catch (err) {
+      console.error('Exception loading assistants:', err);
+    }
+  };
+
+  const handleCreateAssistant = async (name: string, description?: string) => {
+    try {
+      const { data, error } = await supabase.schema('droweder_ia').from('assistants').insert([{ name, description }]).select();
+      if (error) {
+        console.error('Error creating assistant:', error);
+        setToastMessage('Erro ao criar assistente: ' + error.message);
+      } else if (data) {
+        setAssistants([data[0], ...assistants]);
+        setToastMessage('Assistente criado com sucesso!');
+      }
+    } catch (err: any) {
+      console.error('Exception creating assistant:', err);
+      setToastMessage('Erro ao criar assistente: ' + err.message);
+    }
+  };
+
+  useEffect(() => {
+    void loadAssistants();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [isRenameModalOpen, setIsRenameModalOpen] = useState(false);
   const [chatToRenameId, setChatToRenameId] = useState<string | null>(null);
@@ -260,6 +300,7 @@ const Layout: React.FC = () => {
                 {!isSidebarCollapsed && <span>Novo Chat</span>}
               </button>
               <button
+                onClick={() => setIsSearchModalOpen(true)}
                 className={`w-full flex items-center gap-3 h-8 px-3 rounded-md transition-all duration-200 text-sm font-medium text-slate-600 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white`}
                 title="Buscar em chats"
               >
@@ -322,7 +363,10 @@ const Layout: React.FC = () => {
                               <span className="truncate">{assistant.name}</span>
                            </button>
                         ))}
-                        <button className="w-full flex items-center gap-3 h-8 px-3 rounded-md transition-all duration-200 text-sm font-medium text-slate-600 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white">
+                        <button
+                            onClick={() => setIsExploreAssistantsModalOpen(true)}
+                            className="w-full flex items-center gap-3 h-8 px-3 rounded-md transition-all duration-200 text-sm font-medium text-slate-600 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white"
+                        >
                             <Bot size={20} />
                             <span>Explorar</span>
                         </button>
@@ -566,8 +610,8 @@ const Layout: React.FC = () => {
       <CreateAssistantModal
         isOpen={isCreateAssistantModalOpen}
         onClose={() => setIsCreateAssistantModalOpen(false)}
-        onCreate={(name) => {
-          setAssistants([...assistants, { id: 'asst-' + Date.now(), name }]);
+        onCreate={(name, description) => {
+          void handleCreateAssistant(name, description);
         }}
       />
 
@@ -639,6 +683,18 @@ const Layout: React.FC = () => {
                 setChatToDeleteId(null);
             }
         }}
+      />
+
+      <SearchModal
+          isOpen={isSearchModalOpen}
+          onClose={() => setIsSearchModalOpen(false)}
+          conversations={conversations}
+      />
+
+      <ExploreAssistantsModal
+          isOpen={isExploreAssistantsModalOpen}
+          onClose={() => setIsExploreAssistantsModalOpen(false)}
+          assistants={assistants}
       />
 
       {toastMessage && (

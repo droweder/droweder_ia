@@ -1,0 +1,20 @@
+name: Vercel Alias – ia-dev
+
+on:
+  deployment_status:
+
+jobs:
+  alias:
+    if: github.event.deployment_status.state == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Instalar Vercel CLI
+        run: npm install -g vercel
+
+      - name: Aplicar alias fixo
+        run: |
+          vercel alias set \
+            "${{ github.event.deployment_status.target_url }}" \
+            "ia-dev.droweder.com.br" \
+            --token=${{ secrets.VERCEL_TOKEN }} \
+            --scope=droweder

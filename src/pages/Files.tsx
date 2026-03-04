@@ -121,6 +121,11 @@ const Files: React.FC = () => {
 
             if (error && (error as any).statusCode !== '409') { // ignore conflict if folder exists
                 console.error("Error creating sector:", error);
+                if (error.message.includes('Bucket not found')) {
+                    alert("Erro: O bucket 'company_files' não foi encontrado no Supabase. Por favor, crie este bucket (público) no painel do Supabase (Storage) antes de prosseguir com uploads.");
+                } else {
+                    alert(`Erro ao criar setor: ${error.message}`);
+                }
             } else {
                 setNewSectorName('');
                 await loadSectors();
@@ -148,7 +153,11 @@ const Files: React.FC = () => {
 
                 if (error) {
                     console.error("Error uploading file:", error);
-                    // could show a toast here
+                    if (error.message.includes('Bucket not found')) {
+                        alert("Erro: O bucket 'company_files' não foi encontrado no Supabase. Por favor, crie este bucket (público) no painel do Supabase (Storage) antes de prosseguir com uploads.");
+                    } else {
+                        alert(`Erro ao fazer upload do arquivo: ${error.message}`);
+                    }
                 }
             }
 

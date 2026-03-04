@@ -57,15 +57,25 @@ CREATE TABLE IF NOT EXISTS droweder_ia.conversations (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
     project_id UUID REFERENCES droweder_ia.projects(id) ON DELETE SET NULL,
-    assistant_id UUID REFERENCES droweder_ia.assistants(id) ON DELETE SET NULL
+    assistant_id UUID REFERENCES droweder_ia.assistants(id) ON DELETE SET NULL,
+    is_pinned BOOLEAN DEFAULT false NOT NULL,
+    is_archived BOOLEAN DEFAULT false NOT NULL
 );
 
--- Adicionando coluna assistant_id na tabela conversations caso ela já exista
+-- Adicionando coluna assistant_id, is_pinned e is_archived na tabela conversations caso ela já exista
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns
                    WHERE table_schema='droweder_ia' AND table_name='conversations' AND column_name='assistant_id') THEN
         ALTER TABLE droweder_ia.conversations ADD COLUMN assistant_id UUID REFERENCES droweder_ia.assistants(id) ON DELETE SET NULL;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema='droweder_ia' AND table_name='conversations' AND column_name='is_pinned') THEN
+        ALTER TABLE droweder_ia.conversations ADD COLUMN is_pinned BOOLEAN DEFAULT false NOT NULL;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns
+                   WHERE table_schema='droweder_ia' AND table_name='conversations' AND column_name='is_archived') THEN
+        ALTER TABLE droweder_ia.conversations ADD COLUMN is_archived BOOLEAN DEFAULT false NOT NULL;
     END IF;
 END $$;
 

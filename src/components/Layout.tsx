@@ -220,6 +220,8 @@ const Layout: React.FC = () => {
           .schema('droweder_ia')
           .from('conversations')
           .select('*')
+          .eq('is_archived', false)
+          .order('is_pinned', { ascending: false })
           .order('created_at', { ascending: false });
 
       if (convError) console.error('Error fetching conversations:', convError);
@@ -594,21 +596,61 @@ const Layout: React.FC = () => {
                                         <div className="h-px bg-slate-200 dark:bg-white/10 my-1 mx-4"></div>
 
                                         <button
-                                            onClick={(e) => {
+                                            onClick={async (e) => {
                                                 e.stopPropagation();
                                                 setOpenChatMenuId(null);
-                                                showToast("Recurso 'Fixar chat' em breve.", "info");
+
+                                                const newPinnedStatus = !chat.is_pinned;
+                                                setConversations(prev => {
+                                                    const updated = prev.map(c => c.id === chat.id ? { ...c, is_pinned: newPinnedStatus } : c);
+                                                    return updated.sort((a, b) => {
+                                                        if (a.is_pinned === b.is_pinned) {
+                                                            return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+                                                        }
+                                                        return a.is_pinned ? -1 : 1;
+                                                    });
+                                                });
+
+                                                const { error } = await supabase.schema('droweder_ia').from('conversations').update({ is_pinned: newPinnedStatus }).eq('id', chat.id);
+
+                                                if (error) {
+                                                    setConversations(prev => {
+                                                        const reverted = prev.map(c => c.id === chat.id ? { ...c, is_pinned: !newPinnedStatus } : c);
+                                                        return reverted.sort((a, b) => {
+                                                            if (a.is_pinned === b.is_pinned) {
+                                                                return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+                                                            }
+                                                            return a.is_pinned ? -1 : 1;
+                                                        });
+                                                    });
+                                                    showToast("Erro ao fixar o chat.", "error");
+                                                } else {
+                                                    showToast(newPinnedStatus ? "Chat fixado com sucesso." : "Chat desfixado com sucesso.", "success");
+                                                }
                                             }}
                                             className="w-full flex items-center gap-3 px-4 py-2 text-sm text-slate-700 dark:text-gray-200 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
                                         >
-                                            <Pin size={16} />
-                                            Fixar chat
+                                            <Pin size={16} className={chat.is_pinned ? "text-[#7e639f]" : ""} />
+                                            {chat.is_pinned ? 'Desfixar chat' : 'Fixar chat'}
                                         </button>
                                         <button
-                                            onClick={(e) => {
+                                            onClick={async (e) => {
                                                 e.stopPropagation();
                                                 setOpenChatMenuId(null);
-                                                showToast("Recurso 'Arquivar chat' em breve.", "info");
+
+                                                setConversations(prev => prev.filter(c => c.id !== chat.id));
+                                                const { error } = await supabase.schema('droweder_ia').from('conversations').update({ is_archived: true }).eq('id', chat.id);
+
+                                                if (error) {
+                                                    setConversations(prev => [...prev, chat]);
+                                                    showToast("Erro ao arquivar o chat.", "error");
+                                                } else {
+                                                    showToast("Chat arquivado.", "info");
+                                                    if (activeConversationId === chat.id) {
+                                                        setActiveConversationId(null);
+                                                        navigate('/');
+                                                    }
+                                                }
                                             }}
                                             className="w-full flex items-center gap-3 px-4 py-2 text-sm text-slate-700 dark:text-gray-200 hover:bg-slate-100 dark:hover:bg-white/5 transition-colors"
                                         >

@@ -56,7 +56,7 @@ export function CreateAssistantModal({ isOpen, onClose, onCreate }: CreateAssist
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 dark:bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-white dark:bg-[#212121] text-slate-800 dark:text-gray-200 w-full max-w-[800px] h-[85vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-slate-200 dark:border-white/10 text-slate-800 dark:text-gray-200 w-full max-w-[800px] h-[85vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
 
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-white/10 shrink-0">
@@ -124,7 +124,7 @@ export function CreateAssistantModal({ isOpen, onClose, onCreate }: CreateAssist
                                     value={assistantName}
                                     onChange={(e) => setAssistantName(e.target.value)}
                                     placeholder="Ex: Analista de Dados"
-                                    className="w-full bg-white dark:bg-[#2b2d31] border border-slate-200 dark:border-white/10 rounded-xl py-2 px-3 text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#7e639f] transition-colors"
+                                    className="w-full bg-white dark:bg-black/20 border border-slate-200 dark:border-white/10 rounded-xl py-2 px-3 text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#7e639f] transition-colors"
                                 />
                             </div>
                             <div>
@@ -134,7 +134,7 @@ export function CreateAssistantModal({ isOpen, onClose, onCreate }: CreateAssist
                                     value={assistantDescription}
                                     onChange={(e) => setAssistantDescription(e.target.value)}
                                     placeholder="Ex: Especialista em analisar relatórios..."
-                                    className="w-full bg-white dark:bg-[#2b2d31] border border-slate-200 dark:border-white/10 rounded-xl py-2 px-3 text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#7e639f] transition-colors"
+                                    className="w-full bg-white dark:bg-black/20 border border-slate-200 dark:border-white/10 rounded-xl py-2 px-3 text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#7e639f] transition-colors"
                                 />
                             </div>
                         </div>
@@ -156,7 +156,7 @@ export function CreateAssistantModal({ isOpen, onClose, onCreate }: CreateAssist
                             onChange={(e) => setAssistantInstructions(e.target.value)}
                             placeholder="O que este assistente faz? Como ele deve se comportar? O que ele deve evitar?"
                             rows={6}
-                            className="w-full bg-white dark:bg-[#2b2d31] border border-slate-200 dark:border-white/10 rounded-xl py-3 px-4 text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#7e639f] transition-colors resize-y min-h-[120px]"
+                            className="w-full bg-white dark:bg-black/20 border border-slate-200 dark:border-white/10 rounded-xl py-3 px-4 text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:border-[#7e639f] transition-colors resize-y min-h-[120px]"
                         />
                     </div>
                 </section>
@@ -190,7 +190,7 @@ export function CreateAssistantModal({ isOpen, onClose, onCreate }: CreateAssist
                     {knowledgeFiles.length > 0 && (
                         <ul className="mt-4 space-y-2">
                             {knowledgeFiles.map((file, index) => (
-                                <li key={index} className="flex items-center justify-between p-3 rounded-lg bg-white dark:bg-[#2b2d31] border border-slate-200 dark:border-white/10">
+                                <li key={index} className="flex items-center justify-between p-3 rounded-lg bg-white dark:bg-black/20 border border-slate-200 dark:border-white/10">
                                     <div className="flex items-center gap-3 overflow-hidden">
                                         <div className="p-2 bg-slate-100 dark:bg-white/5 rounded-md">
                                             <UploadCloud size={16} className="text-slate-500" />
@@ -213,7 +213,7 @@ export function CreateAssistantModal({ isOpen, onClose, onCreate }: CreateAssist
                         <h3 className="text-lg font-semibold">Capacidades Extras</h3>
                     </div>
                     <div className="space-y-3">
-                        <label className="flex items-start gap-3 p-3 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#2b2d31] cursor-pointer hover:border-[#7e639f] dark:hover:border-[#7e639f] transition-colors">
+                        <label className="flex items-start gap-3 p-3 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-black/20 cursor-pointer hover:border-[#7e639f] dark:hover:border-[#7e639f] transition-colors">
                             <div className="flex items-center h-5 mt-1">
                                 <input
                                     type="checkbox"
@@ -231,7 +231,7 @@ export function CreateAssistantModal({ isOpen, onClose, onCreate }: CreateAssist
                             </div>
                         </label>
 
-                        <label className="flex items-start gap-3 p-3 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#2b2d31] cursor-pointer hover:border-[#7e639f] dark:hover:border-[#7e639f] transition-colors">
+                        <label className="flex items-start gap-3 p-3 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-black/20 cursor-pointer hover:border-[#7e639f] dark:hover:border-[#7e639f] transition-colors">
                             <div className="flex items-center h-5 mt-1">
                                 <input
                                     type="checkbox"
@@ -249,7 +249,7 @@ export function CreateAssistantModal({ isOpen, onClose, onCreate }: CreateAssist
                             </div>
                         </label>
 
-                        <label className="flex items-start gap-3 p-3 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-[#2b2d31] cursor-pointer hover:border-[#7e639f] dark:hover:border-[#7e639f] transition-colors">
+                        <label className="flex items-start gap-3 p-3 rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-black/20 cursor-pointer hover:border-[#7e639f] dark:hover:border-[#7e639f] transition-colors">
                             <div className="flex items-center h-5 mt-1">
                                 <input
                                     type="checkbox"

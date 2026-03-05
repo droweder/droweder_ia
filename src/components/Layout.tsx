@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
-import { MessageSquare, Sun, Moon, LogOut, ChevronDown, Plus, PanelLeft, Search, FileText, Bot, FolderKanban, MoreVertical, Layers, Share, UserPlus, Pencil, Folder, Pin, Archive, Trash2, ChevronRight } from 'lucide-react';
+import { Sun, Moon, LogOut, ChevronDown, Plus, PanelLeft, Search, FileText, Bot, FolderKanban, MoreVertical, Share, UserPlus, Pencil, Folder, Pin, Archive, Trash2, ChevronRight } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { supabase } from '../lib/supabaseClient';
@@ -401,10 +401,11 @@ const Layout: React.FC = () => {
                 {!isSidebarCollapsed && <span>Buscar em chats</span>}
               </button>
               <button
-                className={`w-full flex items-center gap-3 h-8 px-3 rounded-md transition-all duration-200 text-sm font-medium text-slate-600 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white`}
+                onClick={() => navigate('/files')}
+                className={`w-full flex items-center gap-3 h-8 px-3 rounded-md transition-all duration-200 text-sm font-medium ${isActive('/files') ? 'bg-slate-200 dark:bg-white/10 text-slate-900 dark:text-white border-r-2 border-slate-400 dark:border-white/50' : 'text-slate-600 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white'}`}
                 title="Arquivos"
               >
-                <FileText size={20} />
+                <FileText size={20} className={isActive('/files') ? 'text-slate-900 dark:text-white' : ''} />
                 {!isSidebarCollapsed && <span>Arquivos</span>}
               </button>
               <button
@@ -414,20 +415,6 @@ const Layout: React.FC = () => {
               >
                 <Archive size={20} />
                 {!isSidebarCollapsed && <span>Chats Arquivados</span>}
-              </button>
-              <button
-                className={`w-full flex items-center gap-3 h-8 px-3 rounded-md transition-all duration-200 text-sm font-medium text-slate-600 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white`}
-                title="Documentos"
-              >
-                <MessageSquare size={20} />
-                {!isSidebarCollapsed && <span>Documentos</span>}
-              </button>
-              <button
-                className={`w-full flex items-center gap-3 h-8 px-3 rounded-md transition-all duration-200 text-sm font-medium text-slate-600 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white`}
-                title="Categorias"
-              >
-                <Layers size={20} />
-                {!isSidebarCollapsed && <span>Categorias</span>}
               </button>
           </div>
 

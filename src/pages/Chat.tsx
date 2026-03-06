@@ -76,7 +76,7 @@ const CodeBlock = ({ node, inline, className, children, ...props }: any) => {
             </div>
 
             {isExpanded && (
-                <div className="p-4 overflow-x-auto text-sm scrollbar-thin scrollbar-thumb-gray-600 hover:scrollbar-thumb-gray-500 scrollbar-track-transparent">
+                <div className="w-full overflow-x-auto p-4 pb-2 text-sm scrollbar-thin scrollbar-thumb-blue-900 dark:scrollbar-thumb-blue-800 hover:scrollbar-thumb-blue-800 dark:hover:scrollbar-thumb-blue-700 scrollbar-track-transparent">
                     <SyntaxHighlighter
                         {...({ ...props, ref: undefined } as any)}
                         PreTag="div"
@@ -84,6 +84,7 @@ const CodeBlock = ({ node, inline, className, children, ...props }: any) => {
                         language={language}
                         style={vscDarkPlus}
                         customStyle={{ margin: 0, padding: 0, background: 'transparent' }}
+                        wrapLongLines={false}
                     />
                 </div>
             )}
@@ -544,10 +545,10 @@ let systemPrompt = `Você é o DRoweder IA, um assistente especialista em manufa
   const activeAssistant = assistants.find(a => a.id === activeAssistantId);
 
   return (
-    <div className="flex flex-1 flex-col h-full bg-transparent overflow-hidden transition-colors duration-200">
+    <div className="flex flex-1 flex-col h-full min-h-0 bg-transparent overflow-hidden transition-colors duration-200">
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col min-w-0 bg-transparent transition-colors duration-200">
+      <div className="flex-1 flex flex-col min-w-0 min-h-0 bg-transparent transition-colors duration-200">
         {/* Header - Simplified */}
         <div className="h-14 border-b border-slate-200 dark:border-white/10 flex justify-between items-center bg-white/40 dark:bg-white/5 backdrop-blur-md px-4 shadow-sm z-10">
             <div className="flex items-center gap-4">
@@ -628,7 +629,7 @@ let systemPrompt = `Você é o DRoweder IA, um assistente especialista em manufa
                         <div className="text-sm font-semibold text-slate-800 dark:text-gray-200">
                             {msg.role === 'user' ? 'Você' : 'DRoweder IA'}
                         </div>
-                        <div className="prose prose-sm prose-slate dark:prose-invert max-w-none text-slate-700 dark:text-gray-300 leading-relaxed break-words">
+                        <div className="prose prose-sm prose-slate dark:prose-invert max-w-none text-slate-700 dark:text-gray-300 leading-relaxed break-words overflow-x-auto scrollbar-thin scrollbar-thumb-blue-900 dark:scrollbar-thumb-blue-800 hover:scrollbar-thumb-blue-800 dark:hover:scrollbar-thumb-blue-700">
                             {msg.role === 'user' ? (
                                 <div className="whitespace-pre-wrap">{msg.content}</div>
                             ) : (

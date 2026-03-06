@@ -134,14 +134,14 @@ const Chat: React.FC = () => {
   // Hidden feature flag for SQL debug (can be enabled via query param or user role later)
   const SHOW_SQL_DEBUG = false;
 
-  const [selectedModel, setSelectedModel] = useState<string>('google/gemini-2.0-flash-lite-001');
+  const [selectedModel, setSelectedModel] = useState<string>('google/gemini-2.0-pro-exp-02-05:free');
 
   const models = [
+    { id: 'google/gemini-2.0-pro-exp-02-05:free', name: 'Gemini 2.0 Pro (Web Search)' },
     { id: 'google/gemini-2.0-flash-lite-001', name: 'Gemini 2.0 Flash Lite' },
+    { id: 'perplexity/llama-3.1-sonar-huge-128k-online', name: 'Perplexity Sonar Online' },
     { id: 'google/gemma-3-27b-it:free', name: 'Gemma 3 27B (Free)' },
     { id: 'meta-llama/llama-3.3-70b-instruct:free', name: 'Llama 3.3 70B (Free)' },
-    { id: 'mistralai/mistral-small-3.1-24b-instruct:free', name: 'Mistral Small 3.1 24B (Free)' },
-    { id: 'qwen/qwen3-coder:free', name: 'Qwen 3 Coder (Free)' },
   ];
 
   useEffect(() => {
@@ -363,7 +363,7 @@ let systemPrompt = `Você é o DRoweder IA, um assistente especialista em manufa
         4. O sistema executará sua query e retornará o JSON dos resultados em uma mensagem interna.
         5. Quando receber os resultados do JSON (ou se a pergunta não exigir banco de dados), responda ao usuário final APENAS com a análise em linguagem natural e os dados formatados (tabelas markdown, listas).
         6. NÃO exponha comandos SQL na resposta final, a menos que o usuário peça explicitamente "Mostre o SQL".
-        7. Seja conciso, profissional e use Português do Brasil.
+        7. Seja conciso, profissional e use Português do Brasil.\n        8. VOCÊ TEM ACESSO À INTERNET em tempo real. Sempre que um usuário pedir informações de datas futuras (ex: 2025, 2026), notícias, ou dados não constantes no ERP, NÃO NEGUE O ACESSO; pesquise e responda com base nos resultados da web acoplados à sua requisição.
         8. O 'empresa_id' do usuário logado é: ${companyId}. Sempre filtre as tabelas por empresa_id = '${companyId}' quando aplicável.
         `;
 

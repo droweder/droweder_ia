@@ -24,6 +24,12 @@ export const chatWithOpenRouter = async (
     const requestBody = {
       model: model,
       messages: messages,
+      plugins: [
+        {
+          id: "web",
+          max_results: 5
+        }
+      ]
     };
     console.log("OpenRouter API Request:", JSON.stringify(requestBody, null, 2));
 

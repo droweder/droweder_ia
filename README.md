@@ -5,7 +5,7 @@ Aplicação de Inteligência Artificial conectada ao ERP Planintex.
 ## Stack Tecnológica
 - **Frontend:** React 19 (Vite), TypeScript, Tailwind CSS
 - **Banco de Dados:** Supabase (PostgreSQL)
-- **Hospedagem:** Netlify
+- **Hospedagem:** Vercel
 - **LLM:** OpenRouter (via Supabase Edge Functions)
 
 ## Estrutura do Projeto
@@ -61,13 +61,13 @@ Para proteger a chave da API do OpenRouter, utilizamos uma Supabase Edge Functio
     npm run dev
     ```
 
-## Deploy no Netlify
+## Deploy no Vercel
 
-O projeto está configurado para deploy contínuo no Netlify.
+O projeto está configurado para deploy contínuo no Vercel.
 
 *   **Build command:** `npm run build`
 *   **Publish directory:** `dist`
-*   **Variáveis de Ambiente:** Configure `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` no painel do Netlify.
+*   **Variáveis de Ambiente:** Configure `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` no painel do Vercel.
 
 ## Arquitetura de Segurança Text-to-SQL (Crítico)
 

@@ -49,12 +49,12 @@
     border-radius: 10px;
   }
   .dark ::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.2);
+    background: #1e40af; /* blue-800 */
   }
   ::-webkit-scrollbar-thumb:hover {
     background: rgba(148, 163, 184, 0.8);
   }
   .dark ::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.4);
+    background: #1d4ed8; /* blue-700 */
   }
 }

@@ -42,10 +42,14 @@ const Layout: React.FC = () => {
   const [openChatMenuId, setOpenChatMenuId] = useState<string | null>(null);
   const [chatMenuPosition, setChatMenuPosition] = useState({ top: 0, left: 0 });
   const chatMenuRef = useRef<HTMLDivElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleGlobalClick = (e: MouseEvent) => {
       // Close user menu
+      if (showUserMenu && userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setShowUserMenu(false);
+      }
       // Close chat menu if clicking outside
       if (openChatMenuId && chatMenuRef.current && !chatMenuRef.current.contains(e.target as Node)) {
         setOpenChatMenuId(null);
@@ -53,7 +57,7 @@ const Layout: React.FC = () => {
     };
     document.addEventListener('click', handleGlobalClick);
     return () => document.removeEventListener('click', handleGlobalClick);
-  }, [openChatMenuId]);
+  }, [openChatMenuId, showUserMenu]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -380,7 +384,7 @@ const Layout: React.FC = () => {
         </div>
 
         {/* Menu Principal */}
-        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-white/20 hover:scrollbar-thumb-slate-400 dark:hover:scrollbar-thumb-white/30 scrollbar-track-transparent">
+        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-6 scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-blue-800 hover:scrollbar-thumb-slate-400 dark:hover:scrollbar-thumb-blue-700 scrollbar-track-transparent">
 
           <div className="space-y-1">
               <button
@@ -498,7 +502,7 @@ const Layout: React.FC = () => {
                                             left: `${Math.min(chatMenuPosition.left - 240, window.innerWidth - 250)}px`,
                                             zIndex: 9999
                                         }}
-                                        className="w-60 bg-white dark:bg-[#2b2d31] border border-slate-200 dark:border-white/10 rounded-xl shadow-xl py-2"
+                                        className="w-60 bg-white dark:bg-[#1e293b] border border-slate-200 dark:border-white/10 rounded-xl shadow-xl py-2"
                                     >
                                         <button
                                             onClick={(e) => {
@@ -642,7 +646,7 @@ const Layout: React.FC = () => {
 
         {/* User Menu (Bottom) */}
         <div className="p-3 border-t border-slate-200 dark:border-white/10">
-          <div className="relative">
+          <div className="relative" ref={userMenuRef}>
              <button
                 onClick={() => setShowUserMenu(!showUserMenu)}
                 className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-3'} hover:bg-slate-100 dark:hover:bg-white/10 p-2 rounded-md transition-colors text-left group`}
@@ -665,7 +669,7 @@ const Layout: React.FC = () => {
              {showUserMenu && (
                 <div className="absolute bottom-full left-0 w-full mb-2 bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl border border-slate-200 dark:border-white/10 rounded-lg shadow-xl py-1 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-200 z-50">
                     <button
-                        onClick={toggleTheme}
+                        onClick={() => { toggleTheme(); setShowUserMenu(false); }}
                         className="w-full text-left px-4 py-2.5 text-sm text-slate-700 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-white/10 flex items-center gap-2"
                     >
                         {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}

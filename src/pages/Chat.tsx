@@ -199,7 +199,7 @@ const Chat: React.FC = () => {
   const models = [
     { id: 'google/gemini-2.0-pro-exp-02-05:free', name: 'Gemini 2.0 Pro (Web Search)' },
     { id: 'google/gemini-2.0-flash-lite-001', name: 'Gemini 2.0 Flash Lite' },
-    { id: 'perplexity/llama-3.1-sonar-huge-128k-online', name: 'Perplexity Sonar Online' },
+    { id: 'perplexity/sonar-pro-search', name: 'Perplexity Sonar Online' },
     { id: 'google/gemma-3-27b-it:free', name: 'Gemma 3 27B (Free)' },
     { id: 'meta-llama/llama-3.3-70b-instruct:free', name: 'Llama 3.3 70B (Free)' },
   ];

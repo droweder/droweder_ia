@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { createPortal } from 'react-dom';
-import { Sun, Moon, LogOut, ChevronDown, Plus, PanelLeft, Search, FileText, Bot, FolderKanban, MoreVertical, Share, UserPlus, Pencil, Folder, Pin, Archive, Trash2, ChevronRight } from 'lucide-react';
+import { Sun, Moon, LogOut, ChevronDown, Plus, PanelLeft, Search, FileText, Bot, MoreVertical, Share, UserPlus, Pencil, Folder, Pin, Archive, Trash2, ChevronRight } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { supabase } from '../lib/supabaseClient';
@@ -451,9 +451,19 @@ const Layout: React.FC = () => {
                         <button
                            onClick={() => setIsCreateProjectModalOpen(true)}
                            className="w-full flex items-center gap-3 h-8 px-3 rounded-md transition-all duration-200 text-sm font-medium text-slate-600 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white">
-                            <FolderKanban size={20} />
+                            <Plus size={20} />
                             <span>Novo Projeto</span>
                         </button>
+                        {projects.map((project) => (
+                           <button
+                             key={project.id}
+                             onClick={() => {/* Implement project navigation later if needed, or filter chats */}}
+                             className="w-full flex items-center gap-3 h-8 px-3 rounded-md transition-all duration-200 text-sm font-medium text-slate-600 dark:text-gray-300 hover:bg-slate-100 dark:hover:bg-white/10 hover:text-slate-900 dark:hover:text-white group"
+                           >
+                             <Folder size={16} className="text-slate-400 group-hover:text-blue-500 transition-colors" />
+                             <span className="truncate flex-1 text-left">{project.name}</span>
+                           </button>
+                        ))}
                      </div>
                  )}
               </div>
